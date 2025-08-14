@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  tunneler:
+    build: .
+    container_name: tunneler-game
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped
+    volumes:
+      # Optional: Mount logs directory if you want persistent logs
+      - ./logs:/app/logs
+    networks:
+      - tunneler-network
+
+networks:
+  tunneler-network:
+    driver: bridge

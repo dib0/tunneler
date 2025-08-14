@@ -2,9 +2,107 @@
 
 This project is a remake of Geoffrey Silverton's classic [Tunneler](https://tunneler.org) game for DOS. The game is developed as a HTML5 Canvas and Javascript app, with a small node.js server that facilitates communication between the players. The graphics are a bit different from the original, and some gameplay elements are changed (for example, the map is not randomly generated) but the basic gameplay is the same.
 
-<!--You can play the game on Glitch.com: [https://tunneler.glitch.me](https://tunneler.glitch.me)-->
+You can play the game on Glitch.com: [https://tunneler.glitch.me](https://tunneler.glitch.me)
 
 ![screenshot](screenshot.png)
+
+## Quick Start
+
+### Option 1: Docker (Recommended)
+The easiest way to run Tunneler locally:
+
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd tunneler
+
+# Start with Docker Compose
+docker-compose up --build
+
+# Access the game at http://localhost:3000
+```
+
+### Option 2: Local Node.js
+If you prefer running directly with Node.js:
+
+```bash
+# Install dependencies
+npm install
+
+# Start the server
+npm start
+
+# Access the game at http://localhost:3000
+```
+
+## Development Setup
+
+### Prerequisites
+- **Docker & Docker Compose** (recommended), or
+- **Node.js 14+** and **npm**
+
+### Docker Development
+```bash
+# Start in development mode with live reload
+docker-compose up --build
+
+# View logs
+docker-compose logs -f
+
+# Stop the container
+docker-compose down
+
+# Rebuild after code changes
+docker-compose up --build
+```
+
+### Local Development
+```bash
+# Install dependencies
+npm install
+
+# Start the development server
+npm start
+
+# The server will restart automatically on file changes
+```
+
+### Making Changes
+1. Edit your code files
+2. If using Docker: `docker-compose up --build`
+3. If running locally: Server restarts automatically
+4. Refresh your browser to see changes
+
+## Deployment
+
+### Docker Production Deployment
+```bash
+# Build for production
+docker-compose up -d --build
+
+# Check status
+docker-compose ps
+
+# View logs
+docker-compose logs tunneler
+```
+
+### Manual Deployment
+```bash
+# Install production dependencies
+npm ci --production
+
+# Start the server
+NODE_ENV=production node index.js
+```
+
+## Game Features
+
+- **Multiplayer**: Real-time WebSocket-based multiplayer
+- **Split-screen**: Each player sees their own view
+- **Destructible terrain**: Dig tunnels through the map
+- **Base management**: Refuel energy and repair at your base
+- **Classic gameplay**: Faithful to the original DOS experience
 
 ## Credits & Acknowledgments
 
@@ -39,6 +137,20 @@ This modern web version aims to capture the essence of the original while making
 - Modern JavaScript with Node.js server
 - Faithful recreation of core gameplay mechanics
 - Browser compatibility across devices
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make your changes
+4. Test with Docker: `docker-compose up --build`
+5. Commit your changes: `git commit -am 'Add feature'`
+6. Push to the branch: `git push origin feature-name`
+7. Submit a pull request
+
+## License
+
+See the [LICENSE](LICENSE) file for details.
 
 ---
 
