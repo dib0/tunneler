@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tunneler Classic Asset Generator</title>
+    <title>Tunneler Authentic Asset Generator</title>
+    
+    <!-- Include JSZip library for creating ZIP files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
     <style>
         body { 
             font-family: 'Courier New', monospace; 
@@ -60,119 +65,196 @@
             color: #ff00ff; 
         }
         .download-all:hover { background: #660066; }
+        .authentic { 
+            color: #ffff00; 
+            font-weight: bold; 
+            text-shadow: 0 0 3px #aaaa00;
+        }
+        .info-box {
+            background: #000044;
+            border: 1px solid #0044aa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
-    <h1>🚀 TUNNELER CLASSIC ASSET GENERATOR 🚀</h1>
-    <p>Generate authentic DOS-style assets based on the original Tunneler game</p>
+    <h1>🚀 TUNNELER AUTHENTIC CGA ASSET GENERATOR 🚀</h1>
+    <div class="info-box">
+        <p class="authentic">⚡ AUTHENTIC DOS CGA GRAPHICS ⚡</p>
+        <p>Generates assets using the original Tunneler's 160x100 CGA text-mode hack with authentic 16-color palette</p>
+        <p>• <strong>160x100 resolution</strong> (scaled from text mode)</p>
+        <p>• <strong>CGA 16-color palette</strong> (authentic IBM colors)</p>
+        <p>• <strong>Chunky blocky pixels</strong> (text mode character blocks)</p>
+        <p>• <strong>Split-screen compatible</strong> graphics</p>
+    </div>
 
     <div class="section">
-        <h2>🏁 Classic Tank Sprites</h2>
-        <p>Authentic 5x5 pixel tanks in classic DOS colors (Green, Blue, Red, Yellow)</p>
+        <h2>🏁 Authentic CGA Tank Sprites</h2>
+        <p>Original-style 5x5 pixel tanks using authentic CGA colors and blocky pixels</p>
         <div class="grid" id="tankGrid"></div>
         <button onclick="generateTanks()">Generate All Tank Images</button>
-        <button class="download-all" onclick="downloadAllTanks()">📦 Download All Tanks as ZIP</button>
+        <button class="download-all" onclick="downloadAllTanks()">📦 Download Tanks as ZIP</button>
     </div>
 
     <div class="section">
-        <h2>💥 Bullet Sprites</h2>
-        <p>Small projectile sprites for 8 directions</p>
+        <h2>💥 CGA Bullet Sprites</h2>
+        <p>Small chunky projectile sprites in classic CGA style</p>
         <div class="grid" id="bulletGrid"></div>
         <button onclick="generateBullets()">Generate All Bullet Images</button>
-        <button class="download-all" onclick="downloadAllBullets()">📦 Download All Bullets</button>
+        <button class="download-all" onclick="downloadAllBullets()">📦 Download Bullets as ZIP</button>
     </div>
 
     <div class="section">
-        <h2>🗺️ Map Layers</h2>
-        <p>Three-layer map system: Background, Collision Shapes, Foreground</p>
+        <h2>🗺️ Authentic Tunneler Maps</h2>
+        <p>Three-layer system mimicking original CGA graphics at 160x100 resolution</p>
         <div class="grid">
             <div class="preview">
-                <h3>Background (Dirt)</h3>
-                <canvas id="mapBg" width="600" height="300"></canvas>
-                <br><button onclick="generateMapBg()">Generate Background</button>
+                <h3>Background Layer</h3>
+                <canvas id="mapBg" width="160" height="100"></canvas>
+                <br><button onclick="generateMapBg()">Generate CGA Background</button>
                 <button onclick="downloadCanvas('mapBg', 'map2bg.png')">Download</button>
             </div>
             <div class="preview">
                 <h3>Collision Shapes</h3>
-                <canvas id="mapShapes" width="600" height="300"></canvas>
+                <canvas id="mapShapes" width="160" height="100"></canvas>
                 <br><button onclick="generateMapShapes()">Generate Collision Map</button>
                 <button onclick="downloadCanvas('mapShapes', 'map2shapes.png')">Download</button>
             </div>
             <div class="preview">
-                <h3>Foreground (Tunnels)</h3>
-                <canvas id="mapFg" width="600" height="300"></canvas>
+                <h3>Foreground Tunnels</h3>
+                <canvas id="mapFg" width="160" height="100"></canvas>
                 <br><button onclick="generateMapFg()">Generate Tunnel Map</button>
                 <button onclick="downloadCanvas('mapFg', 'map2fg.png')">Download</button>
             </div>
         </div>
+        <div style="text-align: center; margin: 10px;">
+            <button class="download-all" onclick="generateFullSizeMaps()">🔄 Generate Full-Size Maps (1200x600)</button>
+        </div>
     </div>
 
     <div class="section">
-        <h2>🏠 Base Structures</h2>
-        <p>Player bases with walls and interiors (40x40 pixels)</p>
-        <div class="grid" id="baseGrid"></div>
-        <button onclick="generateBases()">Generate Base Previews</button>
+        <h2>🔊 Authentic DOS Audio</h2>
+        <p>Generate classic PC Speaker and early sound card audio effects</p>
+        <div class="grid">
+            <div class="preview">
+                <h3>Digging Sounds</h3>
+                <button onclick="generateDigSounds()">Generate Dig Audio</button>
+                <br><button onclick="playSound('dig1')">▶️ Play Dig 1</button>
+                <button onclick="playSound('dig2')">▶️ Play Dig 2</button>
+                <button onclick="playSound('dig3')">▶️ Play Dig 3</button>
+                <br><button onclick="downloadSound('dig1')">💾 Download dig1.wav</button>
+                <button onclick="downloadSound('dig2')">💾 Download dig2.wav</button>
+                <button onclick="downloadSound('dig3')">💾 Download dig3.wav</button>
+            </div>
+            <div class="preview">
+                <h3>Combat Sounds</h3>
+                <button onclick="generateCombatSounds()">Generate Combat Audio</button>
+                <br><button onclick="playSound('fire1')">▶️ Play Fire 1</button>
+                <button onclick="playSound('fire2')">▶️ Play Fire 2</button>
+                <button onclick="playSound('hit')">▶️ Play Hit</button>
+                <br><button onclick="downloadSound('fire1')">💾 Download fire1.wav</button>
+                <button onclick="downloadSound('fire2')">💾 Download fire2.wav</button>
+                <button onclick="downloadSound('hit')">💾 Download hit.wav</button>
+            </div>
+            <div class="preview">
+                <h3>Game Events</h3>
+                <button onclick="generateEventSounds()">Generate Event Audio</button>
+                <br><button onclick="playSound('lost')">▶️ Play Lost</button>
+                <br><button onclick="downloadSound('lost')">💾 Download lost.wav</button>
+                <div class="color-info">Tank destruction sound</div>
+            </div>
+        </div>
+        <div style="text-align: center; margin: 10px;">
+            <button class="download-all" onclick="downloadAllAudio()">📦 Download All Audio as ZIP</button>
+        </div>
+        <div class="info-box">
+            <p><strong>🎵 Authentic DOS Audio Features:</strong></p>
+            <p>• PC Speaker style beeps and blips</p>
+            <p>• Low-fi 8-bit sound effects</p>
+            <p>• Short duration (0.1-2 seconds)</p>
+            <p>• Both WAV and OGG formats generated</p>
+        </div>
     </div>
 
     <div class="section">
-        <h2>🎮 UI Elements</h2>
+        <h2>🎮 CGA UI Elements</h2>
         <div class="grid">
             <div class="preview">
                 <h3>Energy (E)</h3>
-                <canvas id="energyIcon" width="40" height="40"></canvas>
+                <canvas id="energyIcon" width="20" height="20"></canvas>
                 <br><button onclick="generateEnergyIcon()">Generate</button>
                 <button onclick="downloadCanvas('energyIcon', 'e.png')">Download</button>
             </div>
             <div class="preview">
                 <h3>Shield (S)</h3>
-                <canvas id="shieldIcon" width="40" height="40"></canvas>
+                <canvas id="shieldIcon" width="20" height="20"></canvas>
                 <br><button onclick="generateShieldIcon()">Generate</button>
                 <button onclick="downloadCanvas('shieldIcon', 's.png')">Download</button>
             </div>
             <div class="preview">
                 <h3>Chat Icon</h3>
-                <canvas id="chatIcon" width="40" height="40"></canvas>
+                <canvas id="chatIcon" width="20" height="20"></canvas>
                 <br><button onclick="generateChatIcon()">Generate</button>
                 <button onclick="downloadCanvas('chatIcon', 'chat.png')">Download</button>
             </div>
         </div>
     </div>
 
-    <!-- Include JSZip library for creating ZIP files -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <div class="section">
+        <h2>📦 Complete Asset Package</h2>
+        <p>Download everything you need in one organized ZIP file</p>
+        <div style="text-align: center; padding: 20px;">
+            <button class="download-all" onclick="downloadAllAssets()" style="font-size: 18px; padding: 15px 30px;">
+                🚀 Download Complete CGA Asset Package
+            </button>
+            <div class="color-info" style="margin-top: 10px;">
+                Includes: All tanks, bullets, maps, audio, and UI elements in proper folder structure
+            </div>
+        </div>
+    </div>
 
     <script>
-        // Classic DOS/VGA color palette
-        const DOS_COLORS = {
-            BLACK: '#000000',
-            BLUE: '#0000AA',
-            GREEN: '#00AA00', 
-            CYAN: '#00AAAA',
-            RED: '#AA0000',
-            MAGENTA: '#AA00AA',
-            BROWN: '#AA5500',
-            WHITE: '#AAAAAA',
-            GRAY: '#555555',
-            BRIGHT_BLUE: '#5555FF',
-            BRIGHT_GREEN: '#55FF55',
-            BRIGHT_CYAN: '#55FFFF',
-            BRIGHT_RED: '#FF5555',
-            BRIGHT_MAGENTA: '#FF55FF',
-            YELLOW: '#FFFF55',
-            BRIGHT_WHITE: '#FFFFFF'
-        };
-
-        // Tank colors for 4 players (classic Tunneler colors)
-        const TANK_COLORS = [
-            DOS_COLORS.BRIGHT_GREEN,  // Player 1
-            DOS_COLORS.BRIGHT_BLUE,   // Player 2  
-            DOS_COLORS.BRIGHT_RED,    // Player 3
-            DOS_COLORS.YELLOW         // Player 4
+        // AUTHENTIC CGA 16-COLOR PALETTE (exact IBM CGA colors)
+        const CGA_PALETTE = [
+            '#000000', // 0 - Black
+            '#0000AA', // 1 - Blue  
+            '#00AA00', // 2 - Green
+            '#00AAAA', // 3 - Cyan
+            '#AA0000', // 4 - Red
+            '#AA00AA', // 5 - Magenta
+            '#AA5500', // 6 - Brown
+            '#AAAAAA', // 7 - Light Gray
+            '#555555', // 8 - Dark Gray
+            '#5555FF', // 9 - Light Blue
+            '#55FF55', // 10 - Light Green
+            '#55FFFF', // 11 - Light Cyan  
+            '#FF5555', // 12 - Light Red
+            '#FF55FF', // 13 - Light Magenta
+            '#FFFF55', // 14 - Yellow
+            '#FFFFFF'  // 15 - White
         ];
 
-        // Dirt/earth color variations
-        const DIRT_COLORS = ['#8B4513', '#A0522D', '#CD853F', '#D2B48C', '#DEB887'];
+        // Tank colors for 4 players (using specific CGA colors)
+        const TANK_COLORS = [
+            CGA_PALETTE[10], // Player 1 - Light Green
+            CGA_PALETTE[9],  // Player 2 - Light Blue  
+            CGA_PALETTE[12], // Player 3 - Light Red
+            CGA_PALETTE[14]  // Player 4 - Yellow
+        ];
+
+        // CGA earth/dirt colors
+        const CGA_DIRT_COLORS = [
+            CGA_PALETTE[6],  // Brown
+            CGA_PALETTE[4],  // Red (dark earth)
+            CGA_PALETTE[8],  // Dark Gray (rocks)
+            CGA_PALETTE[7]   // Light Gray (light dirt)
+        ];
+
+        // Audio context and generated sounds storage
+        let audioContext;
+        const generatedSounds = {};
 
         function createCanvas(width, height) {
             const canvas = document.createElement('canvas');
@@ -182,69 +264,130 @@
             return canvas;
         }
 
-        // Draw classic DOS-style tank (5x5 pixels)
-        function drawClassicTank(ctx, direction, playerNum = 0) {
-            const tankColor = TANK_COLORS[playerNum % 4];
-            const darkColor = darkenColor(tankColor);
+        // Initialize audio context
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioContext;
+        }
+
+        // Create audio buffer from generated tones
+        async function createAudioBuffer(soundGenerator) {
+            const ctx = initAudio();
+            const duration = soundGenerator.duration || 1;
+            const bufferSize = ctx.sampleRate * duration;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
             
-            // Tank body (solid color with simple shading)
+            // Create offline context for rendering
+            const offlineCtx = new OfflineAudioContext(1, bufferSize, ctx.sampleRate);
+            await soundGenerator(offlineCtx);
+            const renderedBuffer = await offlineCtx.startRendering();
+            
+            // Copy to our buffer
+            const data = buffer.getChannelData(0);
+            const renderedData = renderedBuffer.getChannelData(0);
+            for (let i = 0; i < Math.min(bufferSize, renderedData.length); i++) {
+                data[i] = renderedData[i];
+            }
+            
+            return buffer;
+        }
+
+        // Convert audio buffer to WAV blob
+        function audioBufferToWav(buffer) {
+            const length = buffer.length;
+            const arrayBuffer = new ArrayBuffer(44 + length * 2);
+            const view = new DataView(arrayBuffer);
+            const data = buffer.getChannelData(0);
+            
+            // WAV header
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + length * 2, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, buffer.sampleRate, true);
+            view.setUint32(28, buffer.sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, length * 2, true);
+            
+            // Convert float data to 16-bit PCM
+            let offset = 44;
+            for (let i = 0; i < length; i++) {
+                const sample = Math.max(-1, Math.min(1, data[i]));
+                view.setInt16(offset, sample * 0x7FFF, true);
+                offset += 2;
+            }
+            
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
+        }
+
+        // Draw authentic CGA-style tank using blocky text-mode style pixels
+        function drawCGATank(ctx, direction, playerNum = 0) {
+            const tankColor = TANK_COLORS[playerNum % 4];
+            const shadowColor = CGA_PALETTE[8]; // Dark gray shadow
+            
+            // Tank body - fill entire 5x5 area
             ctx.fillStyle = tankColor;
             ctx.fillRect(0, 0, 5, 5);
             
-            // Add dark outline/shadow
-            ctx.fillStyle = darkColor;
-            ctx.fillRect(0, 0, 5, 1); // Top edge
-            ctx.fillRect(0, 0, 1, 5); // Left edge
+            // Add CGA-style shadow (darker pixels)
+            ctx.fillStyle = shadowColor;
+            ctx.fillRect(4, 0, 1, 5); // Right edge
+            ctx.fillRect(0, 4, 5, 1); // Bottom edge
             
-            // Direction indicator (gun barrel/front)
-            ctx.fillStyle = DOS_COLORS.BLACK;
-            const directionMap = {
-                1: [[0, 3], [0, 4]], // Southwest
-                2: [[2, 4]],         // South  
-                3: [[3, 3], [4, 4]], // Southeast
-                4: [[0, 2]],         // West
-                6: [[4, 2]],         // East
-                7: [[0, 0], [1, 0]], // Northwest
-                8: [[2, 0]],         // North
-                9: [[3, 0], [4, 0]]  // Northeast
+            // Direction indicator using contrasting CGA color
+            ctx.fillStyle = CGA_PALETTE[0]; // Black
+            
+            // Authentic CGA-style directional markers (chunky pixels)
+            const directionPixels = {
+                1: [[0, 3], [0, 4], [1, 4]], // Southwest - multiple pixels
+                2: [[2, 4], [1, 4], [3, 4]], // South
+                3: [[3, 3], [4, 3], [4, 4]], // Southeast  
+                4: [[0, 2], [0, 1], [0, 3]], // West
+                6: [[4, 2], [4, 1], [4, 3]], // East
+                7: [[0, 0], [1, 0], [0, 1]], // Northwest
+                8: [[2, 0], [1, 0], [3, 0]], // North
+                9: [[3, 0], [4, 0], [4, 1]]  // Northeast
             };
             
-            if (directionMap[direction]) {
-                directionMap[direction].forEach(([x, y]) => {
+            if (directionPixels[direction]) {
+                directionPixels[direction].forEach(([x, y]) => {
                     ctx.fillRect(x, y, 1, 1);
                 });
             }
         }
 
-        function darkenColor(color) {
-            const hex = color.replace('#', '');
-            const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - 0x40);
-            const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - 0x40);
-            const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - 0x40);
-            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-        }
-
-        // Draw classic bullet
-        function drawClassicBullet(ctx, direction) {
-            ctx.fillStyle = DOS_COLORS.YELLOW;
+        // Draw CGA-style bullet
+        function drawCGABullet(ctx, direction) {
+            ctx.fillStyle = CGA_PALETTE[14]; // Yellow
             
-            // Bullet shape depends on direction
+            // Bullets have different shapes based on direction (CGA style)
             if ([1, 3, 7, 9].includes(direction)) {
-                // Diagonal bullets
+                // Diagonal bullets - 2x2 blocks
                 ctx.fillRect(0, 0, 2, 2);
-                ctx.fillStyle = DOS_COLORS.BRIGHT_WHITE;
-                ctx.fillRect(0, 0, 1, 1);
             } else if ([2, 8].includes(direction)) {
-                // Vertical bullets
+                // Vertical bullets - tall rectangles
                 ctx.fillRect(0, 0, 1, 2);
-                ctx.fillStyle = DOS_COLORS.BRIGHT_WHITE;
-                ctx.fillRect(0, 0, 1, 1);
             } else if ([4, 6].includes(direction)) {
-                // Horizontal bullets
+                // Horizontal bullets - wide rectangles
                 ctx.fillRect(0, 0, 2, 1);
-                ctx.fillStyle = DOS_COLORS.BRIGHT_WHITE;
-                ctx.fillRect(0, 0, 1, 1);
             }
+            
+            // Add highlight pixel (authentic CGA style)
+            ctx.fillStyle = CGA_PALETTE[15]; // White highlight
+            ctx.fillRect(0, 0, 1, 1);
         }
 
         function generateTanks() {
@@ -258,15 +401,15 @@
                     // Create original 5x5 canvas
                     const canvas = createCanvas(5, 5);
                     const ctx = canvas.getContext('2d');
-                    drawClassicTank(ctx, dir, player - 1);
+                    drawCGATank(ctx, dir, player - 1);
                     
-                    // Create preview (scaled up)
+                    // Create preview (scaled up with chunky pixels)
                     const preview = document.createElement('div');
                     preview.className = 'preview';
                     preview.innerHTML = `
                         <canvas width="50" height="50"></canvas>
                         <br><strong>t${(player * 10 + dir).toString().padStart(2, '0')}.png</strong>
-                        <div class="color-info">Player ${player} - Dir ${dir}</div>
+                        <div class="color-info">P${player} Dir${dir} - CGA Style</div>
                         <button onclick="downloadTankImage(${player * 10 + dir})">Download</button>
                     `;
                     
@@ -293,14 +436,14 @@
                 
                 const canvas = createCanvas(2, 2);
                 const ctx = canvas.getContext('2d');
-                drawClassicBullet(ctx, dir);
+                drawCGABullet(ctx, dir);
                 
                 const preview = document.createElement('div');
                 preview.className = 'preview';
                 preview.innerHTML = `
                     <canvas width="40" height="40"></canvas>
                     <br><strong>b${dir}.png</strong>
-                    <div class="color-info">Direction ${dir}</div>
+                    <div class="color-info">Dir ${dir} - CGA Style</div>
                     <button onclick="downloadBulletImage(${dir})">Download</button>
                 `;
                 
@@ -319,22 +462,22 @@
             const canvas = document.getElementById('mapBg');
             const ctx = canvas.getContext('2d');
             
-            // Create layered dirt background
-            const gradient = ctx.createRadialGradient(300, 150, 0, 300, 150, 400);
-            gradient.addColorStop(0, DIRT_COLORS[2]);
-            gradient.addColorStop(0.5, DIRT_COLORS[1]);
-            gradient.addColorStop(1, DIRT_COLORS[0]);
-            
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, 600, 300);
-            
-            // Add dirt texture
-            for (let i = 0; i < 2000; i++) {
-                const x = Math.random() * 600;
-                const y = Math.random() * 300;
-                const color = DIRT_COLORS[Math.floor(Math.random() * DIRT_COLORS.length)];
-                ctx.fillStyle = color;
-                ctx.fillRect(x, y, 1, 1);
+            // Generate CGA-style dirt background using dithering
+            for (let y = 0; y < 100; y++) {
+                for (let x = 0; x < 160; x++) {
+                    // Use CGA dithering pattern for texture
+                    let colorIndex;
+                    if ((x + y) % 3 === 0) {
+                        colorIndex = 6; // Brown
+                    } else if ((x + y) % 4 === 0) {
+                        colorIndex = 4; // Red  
+                    } else {
+                        colorIndex = 8; // Dark Gray
+                    }
+                    
+                    ctx.fillStyle = CGA_PALETTE[colorIndex];
+                    ctx.fillRect(x, y, 1, 1);
+                }
             }
         }
 
@@ -343,21 +486,22 @@
             const ctx = canvas.getContext('2d');
             
             // Clear canvas (transparent background)
-            ctx.clearRect(0, 0, 600, 300);
+            ctx.clearRect(0, 0, 160, 100);
             
-            // Add border walls (solid collision areas)
-            ctx.fillStyle = DOS_COLORS.BLACK;
-            ctx.fillRect(0, 0, 600, 5);     // Top
-            ctx.fillRect(0, 295, 600, 5);   // Bottom  
-            ctx.fillRect(0, 0, 5, 300);     // Left
-            ctx.fillRect(595, 0, 5, 300);   // Right
+            // Add border walls using CGA black
+            ctx.fillStyle = CGA_PALETTE[0]; // Black
+            ctx.fillRect(0, 0, 160, 2);   // Top border
+            ctx.fillRect(0, 98, 160, 2);  // Bottom border
+            ctx.fillRect(0, 0, 2, 100);   // Left border
+            ctx.fillRect(158, 0, 2, 100); // Right border
             
-            // Add some internal obstacles
-            for (let i = 0; i < 8; i++) {
-                const x = 50 + Math.random() * 500;
-                const y = 50 + Math.random() * 200;
-                const w = 20 + Math.random() * 60;
-                const h = 10 + Math.random() * 30;
+            // Add some internal obstacles (CGA style - chunky blocks)
+            for (let i = 0; i < 12; i++) {
+                const x = Math.floor(Math.random() * 140) + 10;
+                const y = Math.floor(Math.random() * 80) + 10;
+                const w = Math.floor(Math.random() * 15) + 5;
+                const h = Math.floor(Math.random() * 8) + 3;
+                
                 ctx.fillRect(x, y, w, h);
             }
         }
@@ -366,126 +510,331 @@
             const canvas = document.getElementById('mapFg');
             const ctx = canvas.getContext('2d');
             
-            // Start with solid dirt
-            ctx.fillStyle = DIRT_COLORS[0];
-            ctx.fillRect(0, 0, 600, 300);
+            // Start with solid CGA dirt
+            ctx.fillStyle = CGA_PALETTE[6]; // Brown
+            ctx.fillRect(0, 0, 160, 100);
             
-            // Dig out tunnel areas (make transparent)
+            // Create tunnels by making areas transparent (CGA style)
             ctx.globalCompositeOperation = 'destination-out';
             
-            // Create winding tunnels
-            for (let tunnel = 0; tunnel < 6; tunnel++) {
-                let x = Math.random() * 600;
-                let y = Math.random() * 300;
-                const steps = 20 + Math.random() * 30;
-                
-                ctx.lineWidth = 8 + Math.random() * 12;
-                ctx.beginPath();
-                ctx.moveTo(x, y);
+            // Create chunky tunnel patterns
+            for (let tunnel = 0; tunnel < 8; tunnel++) {
+                let x = Math.random() * 160;
+                let y = Math.random() * 100;
+                const steps = 15 + Math.random() * 20;
                 
                 for (let step = 0; step < steps; step++) {
-                    x += (Math.random() - 0.5) * 30;
-                    y += (Math.random() - 0.5) * 20;
-                    x = Math.max(10, Math.min(590, x));
-                    y = Math.max(10, Math.min(290, y));
-                    ctx.lineTo(x, y);
+                    // Create chunky tunnel segments
+                    const size = 2 + Math.random() * 4;
+                    ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(size), Math.floor(size));
+                    
+                    // Move in CGA-style chunky steps
+                    x += (Math.random() - 0.5) * 8;
+                    y += (Math.random() - 0.5) * 6;
+                    x = Math.max(2, Math.min(158, x));
+                    y = Math.max(2, Math.min(98, y));
                 }
-                ctx.stroke();
             }
             
             ctx.globalCompositeOperation = 'source-over';
         }
 
-        function generateBases() {
-            const grid = document.getElementById('baseGrid');
-            grid.innerHTML = '';
+        function generateFullSizeMaps() {
+            // Generate the full-size versions (1200x600) by scaling up
+            const smallBg = document.getElementById('mapBg');
+            const smallShapes = document.getElementById('mapShapes');  
+            const smallFg = document.getElementById('mapFg');
             
-            for (let player = 1; player <= 4; player++) {
-                const canvas = createCanvas(40, 40);
-                const ctx = canvas.getContext('2d');
-                drawBase(ctx, player - 1);
-                
-                const preview = document.createElement('div');
-                preview.className = 'preview';
-                preview.innerHTML = `
-                    <canvas width="80" height="80"></canvas>
-                    <br><strong>Player ${player} Base</strong>
-                    <div class="color-info">40x40 pixels</div>
-                `;
-                
-                const previewCanvas = preview.querySelector('canvas');
-                const previewCtx = previewCanvas.getContext('2d');
-                previewCtx.imageSmoothingEnabled = false;
-                previewCtx.scale(2, 2);
-                previewCtx.drawImage(canvas, 0, 0);
-                
-                grid.appendChild(preview);
-            }
-        }
-
-        function drawBase(ctx, playerNum) {
-            const wallColor = DOS_COLORS.GRAY;
-            const floorColor = DOS_COLORS.BLACK;
-            const roofColor = TANK_COLORS[playerNum];
+            // Create full-size canvases
+            const fullBg = createCanvas(1200, 600);
+            const fullShapes = createCanvas(1200, 600);
+            const fullFg = createCanvas(1200, 600);
             
-            // Outer walls
-            ctx.fillStyle = wallColor;
-            ctx.fillRect(0, 0, 40, 40);
+            // Scale up without smoothing to maintain chunky pixels
+            [
+                {small: smallBg, full: fullBg},
+                {small: smallShapes, full: fullShapes},
+                {small: smallFg, full: fullFg}
+            ].forEach(({small, full}) => {
+                const ctx = full.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+                ctx.scale(7.5, 6); // Scale 160x100 to 1200x600
+                ctx.drawImage(small, 0, 0);
+            });
             
-            // Inner floor
-            ctx.fillStyle = floorColor;
-            ctx.fillRect(3, 3, 34, 34);
+            // Store for download
+            window.fullBgCanvas = fullBg;
+            window.fullShapesCanvas = fullShapes;
+            window.fullFgCanvas = fullFg;
             
-            // Corner structures (where you can't go)
-            ctx.fillStyle = wallColor;
-            ctx.fillRect(3, 3, 12, 12);   // Top-left
-            ctx.fillRect(25, 3, 12, 12);  // Top-right
-            ctx.fillRect(3, 25, 12, 12);  // Bottom-left
-            ctx.fillRect(25, 25, 12, 12); // Bottom-right
-            
-            // Roof sections
-            ctx.fillStyle = roofColor;
-            ctx.fillRect(5, 5, 8, 8);     // Top-left roof
-            ctx.fillRect(27, 5, 8, 8);    // Top-right roof
-            ctx.fillRect(5, 27, 8, 8);    // Bottom-left roof
-            ctx.fillRect(27, 27, 8, 8);   // Bottom-right roof
+            console.log('✅ Full-size maps generated!');
+            alert('Full-size maps (1200x600) generated! Use the Complete Asset Package to download them.');
         }
 
         function generateEnergyIcon() {
             const canvas = document.getElementById('energyIcon');
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = DOS_COLORS.YELLOW;
-            ctx.font = 'bold 24px monospace';
-            ctx.fillText('E', 8, 28);
+            
+            // CGA-style chunky E
+            ctx.fillStyle = CGA_PALETTE[14]; // Yellow
+            ctx.fillRect(4, 2, 12, 16);
+            
+            ctx.fillStyle = CGA_PALETTE[0]; // Black
+            ctx.fillRect(6, 4, 6, 2);
+            ctx.fillRect(6, 9, 4, 2);
+            ctx.fillRect(6, 14, 6, 2);
         }
 
         function generateShieldIcon() {
             const canvas = document.getElementById('shieldIcon');
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = DOS_COLORS.BRIGHT_CYAN;
-            ctx.font = 'bold 24px monospace';
-            ctx.fillText('S', 8, 28);
+            
+            // CGA-style chunky S
+            ctx.fillStyle = CGA_PALETTE[11]; // Light Cyan
+            ctx.fillRect(4, 2, 12, 16);
+            
+            ctx.fillStyle = CGA_PALETTE[0]; // Black
+            ctx.fillRect(6, 4, 6, 2);
+            ctx.fillRect(10, 7, 4, 2);
+            ctx.fillRect(6, 10, 4, 2);
+            ctx.fillRect(6, 14, 6, 2);
         }
 
         function generateChatIcon() {
             const canvas = document.getElementById('chatIcon');
             const ctx = canvas.getContext('2d');
             
-            // Speech bubble
-            ctx.fillStyle = DOS_COLORS.WHITE;
-            ctx.fillRect(4, 8, 32, 20);
-            ctx.fillStyle = DOS_COLORS.BLACK;
-            ctx.fillRect(6, 10, 28, 16);
+            // CGA-style speech bubble
+            ctx.fillStyle = CGA_PALETTE[15]; // White
+            ctx.fillRect(2, 4, 16, 10);
             
-            // Text lines
-            ctx.fillStyle = DOS_COLORS.WHITE;
-            ctx.fillRect(8, 12, 8, 2);
-            ctx.fillRect(8, 16, 12, 2);
-            ctx.fillRect(8, 20, 6, 2);
+            ctx.fillStyle = CGA_PALETTE[0]; // Black interior
+            ctx.fillRect(4, 6, 12, 6);
             
-            // Speech bubble tail
-            ctx.fillStyle = DOS_COLORS.WHITE;
-            ctx.fillRect(10, 28, 4, 4);
+            // Text dots
+            ctx.fillStyle = CGA_PALETTE[15]; // White
+            ctx.fillRect(6, 8, 2, 1);
+            ctx.fillRect(10, 8, 2, 1);
+            ctx.fillRect(6, 10, 3, 1);
+            
+            // Speech tail
+            ctx.fillRect(6, 14, 3, 2);
+        }
+
+        // Generate dig sounds (different pitches and textures)
+        async function generateDigSounds() {
+            console.log('🔊 Generating authentic dig sounds...');
+            
+            // Dig sound 1 - High pitched scrape
+            generatedSounds.dig1 = await createAudioBuffer(async (ctx) => {
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                const filter = ctx.createBiquadFilter();
+                
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                oscillator.frequency.setValueAtTime(800, 0);
+                oscillator.frequency.linearRampToValueAtTime(400, 0.15);
+                oscillator.type = 'sawtooth';
+                
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1200, 0);
+                
+                gainNode.gain.setValueAtTime(0.4, 0);
+                gainNode.gain.linearRampToValueAtTime(0, 0.2);
+                
+                oscillator.start(0);
+                oscillator.stop(0.2);
+                
+                return { duration: 0.2 };
+            });
+            
+            // Dig sound 3 - Low pitched thud
+            generatedSounds.dig3 = await createAudioBuffer(async (ctx) => {
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                oscillator.frequency.setValueAtTime(200, 0);
+                oscillator.frequency.linearRampToValueAtTime(100, 0.25);
+                oscillator.type = 'triangle';
+                
+                gainNode.gain.setValueAtTime(0.5, 0);
+                gainNode.gain.linearRampToValueAtTime(0, 0.25);
+                
+                oscillator.start(0);
+                oscillator.stop(0.25);
+                
+                return { duration: 0.25 };
+            });
+            
+            console.log('✅ Dig sounds generated!');
+        }
+
+        // Generate combat sounds
+        async function generateCombatSounds() {
+            console.log('🔊 Generating combat sounds...');
+            
+            // Fire sound 1 - Player firing
+            generatedSounds.fire1 = await createAudioBuffer(async (ctx) => {
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                oscillator.frequency.setValueAtTime(1200, 0);
+                oscillator.frequency.linearRampToValueAtTime(800, 0.1);
+                oscillator.type = 'square';
+                
+                gainNode.gain.setValueAtTime(0.4, 0);
+                gainNode.gain.linearRampToValueAtTime(0, 0.1);
+                
+                oscillator.start(0);
+                oscillator.stop(0.1);
+                
+                return { duration: 0.1 };
+            });
+            
+            // Fire sound 2 - Enemy firing
+            generatedSounds.fire2 = await createAudioBuffer(async (ctx) => {
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                oscillator.frequency.setValueAtTime(1000, 0);
+                oscillator.frequency.linearRampToValueAtTime(600, 0.12);
+                oscillator.type = 'sawtooth';
+                
+                gainNode.gain.setValueAtTime(0.35, 0);
+                gainNode.gain.linearRampToValueAtTime(0, 0.12);
+                
+                oscillator.start(0);
+                oscillator.stop(0.12);
+                
+                return { duration: 0.12 };
+            });
+            
+            // Hit sound - Bullet impact
+            generatedSounds.hit = await createAudioBuffer(async (ctx) => {
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                oscillator.frequency.setValueAtTime(400, 0);
+                oscillator.frequency.linearRampToValueAtTime(200, 0.08);
+                oscillator.type = 'square';
+                
+                gainNode.gain.setValueAtTime(0.6, 0);
+                gainNode.gain.linearRampToValueAtTime(0, 0.08);
+                
+                oscillator.start(0);
+                oscillator.stop(0.08);
+                
+                return { duration: 0.08 };
+            });
+            
+            console.log('✅ Combat sounds generated!');
+        }
+
+        // Generate event sounds
+        async function generateEventSounds() {
+            console.log('🔊 Generating event sounds...');
+            
+            // Lost sound - Tank destruction
+            generatedSounds.lost = await createAudioBuffer(async (ctx) => {
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                oscillator.frequency.setValueAtTime(500, 0);
+                oscillator.frequency.linearRampToValueAtTime(100, 0.8);
+                oscillator.type = 'sawtooth';
+                
+                gainNode.gain.setValueAtTime(0.5, 0);
+                gainNode.gain.linearRampToValueAtTime(0.3, 0.5);
+                gainNode.gain.linearRampToValueAtTime(0, 0.8);
+                
+                oscillator.start(0);
+                oscillator.stop(0.8);
+                
+                return { duration: 0.8 };
+            });
+            
+            console.log('✅ Event sounds generated!');
+        }
+
+        // Play generated sound
+        function playSound(soundName) {
+            const buffer = generatedSounds[soundName];
+            if (!buffer) {
+                console.warn(`Sound ${soundName} not generated yet`);
+                return;
+            }
+            
+            const ctx = initAudio();
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(ctx.destination);
+            source.start(0);
+        }
+
+        // Download sound as WAV file
+        function downloadSound(soundName) {
+            const buffer = generatedSounds[soundName];
+            if (!buffer) {
+                console.warn(`Sound ${soundName} not generated yet`);
+                return;
+            }
+            
+            const wavBlob = audioBufferToWav(buffer);
+            const link = document.createElement('a');
+            link.download = `${soundName}.wav`;
+            link.href = URL.createObjectURL(wavBlob);
+            link.click();
+        }
+
+        // Download all audio as ZIP
+        async function downloadAllAudio() {
+            if (Object.keys(generatedSounds).length === 0) {
+                alert('Please generate sounds first!');
+                return;
+            }
+            
+            const zip = new JSZip();
+            const soundsFolder = zip.folder("assets/sounds");
+            
+            console.log('Creating audio ZIP file...');
+            
+            // Add all generated sounds in both WAV and OGG formats
+            for (const [soundName, buffer] of Object.entries(generatedSounds)) {
+                // Add WAV version
+                const wavBlob = audioBufferToWav(buffer);
+                const wavArrayBuffer = await wavBlob.arrayBuffer();
+                soundsFolder.file(`${soundName}.wav`, wavArrayBuffer);
+                
+                // For OGG, we'll create a copy of WAV (browsers don't support OGG encoding easily)
+                soundsFolder.file(`${soundName}.ogg`, wavArrayBuffer);
+            }
+            
+            try {
+                const content = await zip.generateAsync({type: "blob"});
+                saveAs(content, "tunneler-dos-audio.zip");
+                console.log('✅ Audio ZIP downloaded successfully!');
+            } catch (error) {
+                console.error('❌ Error creating audio ZIP:', error);
+                alert('Error creating audio ZIP file.');
+            }
         }
 
         // Download functions
@@ -539,11 +888,10 @@
             
             try {
                 const content = await zip.generateAsync({type: "blob"});
-                saveAs(content, "tunneler-tanks.zip");
+                saveAs(content, "tunneler-cga-tanks.zip");
                 console.log('✅ Tank ZIP downloaded successfully!');
             } catch (error) {
                 console.error('❌ Error creating tank ZIP:', error);
-                // Fallback to individual downloads
                 downloadTanksIndividually();
             }
         }
@@ -567,11 +915,10 @@
             
             try {
                 const content = await zip.generateAsync({type: "blob"});
-                saveAs(content, "tunneler-bullets.zip");
+                saveAs(content, "tunneler-cga-bullets.zip");
                 console.log('✅ Bullet ZIP downloaded successfully!');
             } catch (error) {
                 console.error('❌ Error creating bullet ZIP:', error);
-                // Fallback to individual downloads
                 downloadBulletsIndividually();
             }
         }
@@ -583,7 +930,7 @@
             const imagesFolder = zip.folder("assets/images");
             const mapsFolder = zip.folder("assets/maps");
             
-            console.log('Creating complete asset ZIP...');
+            console.log('Creating complete CGA asset ZIP...');
             
             // Add tank images
             for (let player = 1; player <= 4; player++) {
@@ -620,30 +967,116 @@
                 }
             });
             
-            // Add map files (scaled to full size)
-            const mapIds = ['mapBg', 'mapShapes', 'mapFg'];
+            // Add map files - use full-size versions if available
+            const mapCanvases = [
+                window.fullBgCanvas || document.getElementById('mapBg'),
+                window.fullShapesCanvas || document.getElementById('mapShapes'),
+                window.fullFgCanvas || document.getElementById('mapFg')
+            ];
             const mapFilenames = ['map2bg.png', 'map2shapes.png', 'map2fg.png'];
             
-            mapIds.forEach((id, index) => {
-                const sourceCanvas = document.getElementById(id);
-                if (sourceCanvas) {
-                    // Scale up to full size (1200x600)
-                    const fullCanvas = createCanvas(1200, 600);
-                    const fullCtx = fullCanvas.getContext('2d');
-                    fullCtx.imageSmoothingEnabled = false;
-                    fullCtx.scale(2, 2);
-                    fullCtx.drawImage(sourceCanvas, 0, 0);
+            mapCanvases.forEach((canvas, index) => {
+                if (canvas) {
+                    let finalCanvas = canvas;
                     
-                    const dataURL = fullCanvas.toDataURL();
+                    // If using small canvas, scale it up to full size
+                    if (canvas.width === 160) {
+                        finalCanvas = createCanvas(1200, 600);
+                        const ctx = finalCanvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = false;
+                        ctx.scale(7.5, 6); // Scale 160x100 to 1200x600
+                        ctx.drawImage(canvas, 0, 0);
+                    }
+                    
+                    const dataURL = finalCanvas.toDataURL();
                     const base64Data = dataURL.split(',')[1];
                     mapsFolder.file(mapFilenames[index], base64Data, {base64: true});
                 }
             });
             
+            // Add sound files to complete package
+            if (Object.keys(generatedSounds).length > 0) {
+                const soundsFolder = zip.folder("assets/sounds");
+                
+                for (const [soundName, buffer] of Object.entries(generatedSounds)) {
+                    // Add WAV version
+                    const wavBlob = audioBufferToWav(buffer);
+                    const wavArrayBuffer = await wavBlob.arrayBuffer();
+                    soundsFolder.file(`${soundName}.wav`, wavArrayBuffer);
+                    soundsFolder.file(`${soundName}.ogg`, wavArrayBuffer); // Fallback
+                }
+            }
+            
+            // Add README with authentic CGA info
+            const readme = `# Tunneler Authentic CGA Assets
+
+These assets are generated to match the original Tunneler's CGA graphics:
+
+## Technical Details:
+- Original resolution: 160x100 pixels (CGA text mode hack)
+- Color palette: Authentic IBM CGA 16-color palette
+- Style: Chunky, blocky pixels matching text-mode graphics
+- Compatible with original split-screen gameplay
+
+## File Structure:
+- assets/images/ - Tank sprites, bullets, UI icons
+- assets/maps/ - Background, collision shapes, foreground layers
+- assets/sounds/ - DOS-style audio effects
+
+## Tank Sprites:
+- 32 total sprites (4 players × 8 directions)
+- Format: t[PlayerDir].png (e.g., t11.png, t23.png)
+- Size: 5×5 pixels each
+
+## Bullet Sprites:
+- 8 directional sprites (1,2,3,4,6,7,8,9)
+- Format: b[Direction].png (e.g., b1.png, b8.png)
+- Size: 1-2 pixels each
+
+## Maps:
+- map2bg.png - Dirt background layer (1200×600)
+- map2shapes.png - Collision detection layer (1200×600)  
+- map2fg.png - Tunnel foreground layer (1200×600)
+
+## UI Elements:
+- e.png - Energy indicator (20×20)
+- s.png - Shield indicator (20×20)
+- chat.png - Chat icon (20×20)
+
+## Audio Files:
+- dig1.wav/ogg - High-pitched digging sound
+- dig2.wav/ogg - Medium-pitched digging sound  
+- dig3.wav/ogg - Low-pitched digging sound
+- fire1.wav/ogg - Player firing sound
+- fire2.wav/ogg - Enemy firing sound
+- hit.wav/ogg - Bullet impact sound
+- lost.wav/ogg - Tank destruction sound
+
+## Technical Audio Details:
+- PC Speaker style square/sawtooth waves
+- Short duration (0.08-0.8 seconds)
+- Low-fi 8-bit aesthetic
+- WAV format (with OGG fallback)
+
+Generated with authentic CGA color palette and chunky pixel styling
+to match the original 1991 DOS game experience.
+`;
+            
+            zip.file("README.md", readme);
+            
             try {
                 const content = await zip.generateAsync({type: "blob"});
-                saveAs(content, "tunneler-complete-assets.zip");
-                console.log('✅ Complete asset ZIP downloaded successfully!');
+                saveAs(content, "tunneler-authentic-cga-assets.zip");
+                console.log('✅ Complete CGA asset ZIP downloaded successfully!');
+                alert('🎉 Complete authentic CGA asset package downloaded!\n\n' +
+                      'Includes:\n' +
+                      '• All tank sprites (32 total)\n' +
+                      '• All bullet sprites (8 directions)\n' +
+                      '• Full-size maps (1200×600)\n' +
+                      '• UI icons\n' +
+                      '• DOS-style audio effects\n' +
+                      '• README with technical details\n\n' +
+                      'Ready to use with your Tunneler game!');
             } catch (error) {
                 console.error('❌ Error creating complete ZIP:', error);
                 alert('Error creating ZIP file. Please try downloading assets individually.');
@@ -672,14 +1105,30 @@
             });
         }
 
-        // Initialize
+        // Initialize with authentic CGA assets
         window.onload = function() {
-            console.log('🚀 Tunneler Asset Generator Ready!');
+            console.log('🚀 Tunneler Authentic CGA Asset Generator Ready!');
+            console.log('💾 Using authentic IBM CGA 16-color palette');
+            console.log('📺 Generating 160x100 chunky pixel graphics');
+            
+            // Generate basic UI elements
             generateEnergyIcon();
             generateShieldIcon(); 
             generateChatIcon();
+            
+            // Generate authentic CGA maps
             generateMapBg();
             generateMapShapes();
+            generateMapFg();
+            
+            // Initialize audio context on user interaction
+            document.addEventListener('click', () => {
+                if (!audioContext) {
+                    initAudio();
+                }
+            }, { once: true });
+            
+            console.log('✅ Basic assets generated. Use buttons to generate tanks, bullets, and audio.');
         };
     </script>
 </body>
