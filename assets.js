@@ -8,9 +8,10 @@
 /* global initialized
  */
 
-const MAPS_URL_PREFIX = 'https://cdn.glitch.me/db6a8c88-13c1-416e-a5fa-533e6e974dd3%2F';
-const IMAGES_URL_PREFIX = 'https://cdn.glitch.me/db6a8c88-13c1-416e-a5fa-533e6e974dd3%2F';
-const SOUNDS_URL_PREFIX = 'https://cdn.glitch.me/db6a8c88-13c1-416e-a5fa-533e6e974dd3%2F';
+// Updated to use local asset paths
+const MAPS_URL_PREFIX = './assets/maps/';
+const IMAGES_URL_PREFIX = './assets/images/';
+const SOUNDS_URL_PREFIX = './assets/sounds/';
 
 // Images
 let bgImage, shapesImage, mapImage;
@@ -33,6 +34,10 @@ function loadImage(filename) {
   const img = new Image();
   img.crossOrigin = 'anonymous';
   img.onload = () => state++;
+  img.onerror = () => {
+    console.error('Failed to load image:', filename);
+    state++; // Still increment to prevent hanging
+  };
   img.src = filename;
   return img;
 }
@@ -81,6 +86,6 @@ function sndDigRandom() {
 // Play sound, unless game is still initializing (rewinding the gameplay trace)
 function playSound(snd) {
   if (initialized) {
-    snd.play();
+    snd.play().catch(e => console.warn('Audio play failed:', e));
   }
 }
