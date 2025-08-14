@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tunneler Classic Asset Generator</title>
+    <style>
+        body { 
+            font-family: 'Courier New', monospace; 
+            padding: 20px; 
+            background: #000; 
+            color: #00ff00; 
+            line-height: 1.4;
+        }
+        .section { 
+            margin: 20px 0; 
+            padding: 20px; 
+            border: 2px solid #00aa00; 
+            border-radius: 8px; 
+            background: #001100;
+        }
+        canvas { 
+            border: 1px solid #555; 
+            margin: 5px; 
+            image-rendering: pixelated; 
+            background: #000;
+        }
+        button { 
+            background: #004400; 
+            color: #00ff00; 
+            border: 2px solid #00aa00; 
+            padding: 8px 16px; 
+            margin: 5px; 
+            cursor: pointer; 
+            border-radius: 4px; 
+            font-family: 'Courier New', monospace;
+        }
+        button:hover { background: #006600; }
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); 
+            gap: 15px; 
+        }
+        .preview { 
+            background: #002200; 
+            padding: 10px; 
+            border: 1px solid #004400;
+            border-radius: 4px; 
+            text-align: center; 
+        }
+        .color-info {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        h1, h2 { color: #00ffff; text-shadow: 0 0 5px #00aaaa; }
+        .download-all { 
+            background: #440044; 
+            border-color: #aa00aa; 
+            color: #ff00ff; 
+        }
+        .download-all:hover { background: #660066; }
+    </style>
+</head>
+<body>
+    <h1>🚀 TUNNELER CLASSIC ASSET GENERATOR 🚀</h1>
+    <p>Generate authentic DOS-style assets based on the original Tunneler game</p>
+
+    <div class="section">
+        <h2>🏁 Classic Tank Sprites</h2>
+        <p>Authentic 5x5 pixel tanks in classic DOS colors (Green, Blue, Red, Yellow)</p>
+        <div class="grid" id="tankGrid"></div>
+        <button onclick="generateTanks()">Generate All Tank Images</button>
+        <button class="download-all" onclick="downloadAllTanks()">📦 Download All Tanks as ZIP</button>
+    </div>
+
+    <div class="section">
+        <h2>💥 Bullet Sprites</h2>
+        <p>Small projectile sprites for 8 directions</p>
+        <div class="grid" id="bulletGrid"></div>
+        <button onclick="generateBullets()">Generate All Bullet Images</button>
+        <button class="download-all" onclick="downloadAllBullets()">📦 Download All Bullets</button>
+    </div>
+
+    <div class="section">
+        <h2>🗺️ Map Layers</h2>
+        <p>Three-layer map system: Background, Collision Shapes, Foreground</p>
+        <div class="grid">
+            <div class="preview">
+                <h3>Background (Dirt)</h3>
+                <canvas id="mapBg" width="600" height="300"></canvas>
+                <br><button onclick="generateMapBg()">Generate Background</button>
+                <button onclick="downloadCanvas('mapBg', 'map2bg.png')">Download</button>
+            </div>
+            <div class="preview">
+                <h3>Collision Shapes</h3>
+                <canvas id="mapShapes" width="600" height="300"></canvas>
+                <br><button onclick="generateMapShapes()">Generate Collision Map</button>
+                <button onclick="downloadCanvas('mapShapes', 'map2shapes.png')">Download</button>
+            </div>
+            <div class="preview">
+                <h3>Foreground (Tunnels)</h3>
+                <canvas id="mapFg" width="600" height="300"></canvas>
+                <br><button onclick="generateMapFg()">Generate Tunnel Map</button>
+                <button onclick="downloadCanvas('mapFg', 'map2fg.png')">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>🏠 Base Structures</h2>
+        <p>Player bases with walls and interiors (40x40 pixels)</p>
+        <div class="grid" id="baseGrid"></div>
+        <button onclick="generateBases()">Generate Base Previews</button>
+    </div>
+
+    <div class="section">
+        <h2>🎮 UI Elements</h2>
+        <div class="grid">
+            <div class="preview">
+                <h3>Energy (E)</h3>
+                <canvas id="energyIcon" width="40" height="40"></canvas>
+                <br><button onclick="generateEnergyIcon()">Generate</button>
+                <button onclick="downloadCanvas('energyIcon', 'e.png')">Download</button>
+            </div>
+            <div class="preview">
+                <h3>Shield (S)</h3>
+                <canvas id="shieldIcon" width="40" height="40"></canvas>
+                <br><button onclick="generateShieldIcon()">Generate</button>
+                <button onclick="downloadCanvas('shieldIcon', 's.png')">Download</button>
+            </div>
+            <div class="preview">
+                <h3>Chat Icon</h3>
+                <canvas id="chatIcon" width="40" height="40"></canvas>
+                <br><button onclick="generateChatIcon()">Generate</button>
+                <button onclick="downloadCanvas('chatIcon', 'chat.png')">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include JSZip library for creating ZIP files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <script>
+        // Classic DOS/VGA color palette
+        const DOS_COLORS = {
+            BLACK: '#000000',
+            BLUE: '#0000AA',
+            GREEN: '#00AA00', 
+            CYAN: '#00AAAA',
+            RED: '#AA0000',
+            MAGENTA: '#AA00AA',
+            BROWN: '#AA5500',
+            WHITE: '#AAAAAA',
+            GRAY: '#555555',
+            BRIGHT_BLUE: '#5555FF',
+            BRIGHT_GREEN: '#55FF55',
+            BRIGHT_CYAN: '#55FFFF',
+            BRIGHT_RED: '#FF5555',
+            BRIGHT_MAGENTA: '#FF55FF',
+            YELLOW: '#FFFF55',
+            BRIGHT_WHITE: '#FFFFFF'
+        };
+
+        // Tank colors for 4 players (classic Tunneler colors)
+        const TANK_COLORS = [
+            DOS_COLORS.BRIGHT_GREEN,  // Player 1
+            DOS_COLORS.BRIGHT_BLUE,   // Player 2  
+            DOS_COLORS.BRIGHT_RED,    // Player 3
+            DOS_COLORS.YELLOW         // Player 4
+        ];
+
+        // Dirt/earth color variations
+        const DIRT_COLORS = ['#8B4513', '#A0522D', '#CD853F', '#D2B48C', '#DEB887'];
+
+        function createCanvas(width, height) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.imageRendering = 'pixelated';
+            return canvas;
+        }
+
+        // Draw classic DOS-style tank (5x5 pixels)
+        function drawClassicTank(ctx, direction, playerNum = 0) {
+            const tankColor = TANK_COLORS[playerNum % 4];
+            const darkColor = darkenColor(tankColor);
+            
+            // Tank body (solid color with simple shading)
+            ctx.fillStyle = tankColor;
+            ctx.fillRect(0, 0, 5, 5);
+            
+            // Add dark outline/shadow
+            ctx.fillStyle = darkColor;
+            ctx.fillRect(0, 0, 5, 1); // Top edge
+            ctx.fillRect(0, 0, 1, 5); // Left edge
+            
+            // Direction indicator (gun barrel/front)
+            ctx.fillStyle = DOS_COLORS.BLACK;
+            const directionMap = {
+                1: [[0, 3], [0, 4]], // Southwest
+                2: [[2, 4]],         // South  
+                3: [[3, 3], [4, 4]], // Southeast
+                4: [[0, 2]],         // West
+                6: [[4, 2]],         // East
+                7: [[0, 0], [1, 0]], // Northwest
+                8: [[2, 0]],         // North
+                9: [[3, 0], [4, 0]]  // Northeast
+            };
+            
+            if (directionMap[direction]) {
+                directionMap[direction].forEach(([x, y]) => {
+                    ctx.fillRect(x, y, 1, 1);
+                });
+            }
+        }
+
+        function darkenColor(color) {
+            const hex = color.replace('#', '');
+            const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - 0x40);
+            const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - 0x40);
+            const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - 0x40);
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+
+        // Draw classic bullet
+        function drawClassicBullet(ctx, direction) {
+            ctx.fillStyle = DOS_COLORS.YELLOW;
+            
+            // Bullet shape depends on direction
+            if ([1, 3, 7, 9].includes(direction)) {
+                // Diagonal bullets
+                ctx.fillRect(0, 0, 2, 2);
+                ctx.fillStyle = DOS_COLORS.BRIGHT_WHITE;
+                ctx.fillRect(0, 0, 1, 1);
+            } else if ([2, 8].includes(direction)) {
+                // Vertical bullets
+                ctx.fillRect(0, 0, 1, 2);
+                ctx.fillStyle = DOS_COLORS.BRIGHT_WHITE;
+                ctx.fillRect(0, 0, 1, 1);
+            } else if ([4, 6].includes(direction)) {
+                // Horizontal bullets
+                ctx.fillRect(0, 0, 2, 1);
+                ctx.fillStyle = DOS_COLORS.BRIGHT_WHITE;
+                ctx.fillRect(0, 0, 1, 1);
+            }
+        }
+
+        function generateTanks() {
+            const grid = document.getElementById('tankGrid');
+            grid.innerHTML = '';
+            
+            for (let player = 1; player <= 4; player++) {
+                for (let dir = 1; dir <= 9; dir++) {
+                    if (dir === 5) continue; // No direction 5
+                    
+                    // Create original 5x5 canvas
+                    const canvas = createCanvas(5, 5);
+                    const ctx = canvas.getContext('2d');
+                    drawClassicTank(ctx, dir, player - 1);
+                    
+                    // Create preview (scaled up)
+                    const preview = document.createElement('div');
+                    preview.className = 'preview';
+                    preview.innerHTML = `
+                        <canvas width="50" height="50"></canvas>
+                        <br><strong>t${(player * 10 + dir).toString().padStart(2, '0')}.png</strong>
+                        <div class="color-info">Player ${player} - Dir ${dir}</div>
+                        <button onclick="downloadTankImage(${player * 10 + dir})">Download</button>
+                    `;
+                    
+                    const previewCanvas = preview.querySelector('canvas');
+                    const previewCtx = previewCanvas.getContext('2d');
+                    previewCtx.imageSmoothingEnabled = false;
+                    previewCtx.scale(10, 10);
+                    previewCtx.drawImage(canvas, 0, 0);
+                    
+                    grid.appendChild(preview);
+                    
+                    // Store original for download
+                    window['tankCanvas_' + (player * 10 + dir)] = canvas;
+                }
+            }
+        }
+
+        function generateBullets() {
+            const grid = document.getElementById('bulletGrid');
+            grid.innerHTML = '';
+            
+            for (let dir = 1; dir <= 9; dir++) {
+                if (dir === 5) continue;
+                
+                const canvas = createCanvas(2, 2);
+                const ctx = canvas.getContext('2d');
+                drawClassicBullet(ctx, dir);
+                
+                const preview = document.createElement('div');
+                preview.className = 'preview';
+                preview.innerHTML = `
+                    <canvas width="40" height="40"></canvas>
+                    <br><strong>b${dir}.png</strong>
+                    <div class="color-info">Direction ${dir}</div>
+                    <button onclick="downloadBulletImage(${dir})">Download</button>
+                `;
+                
+                const previewCanvas = preview.querySelector('canvas');
+                const previewCtx = previewCanvas.getContext('2d');
+                previewCtx.imageSmoothingEnabled = false;
+                previewCtx.scale(20, 20);
+                previewCtx.drawImage(canvas, 0, 0);
+                
+                grid.appendChild(preview);
+                window['bulletCanvas_' + dir] = canvas;
+            }
+        }
+
+        function generateMapBg() {
+            const canvas = document.getElementById('mapBg');
+            const ctx = canvas.getContext('2d');
+            
+            // Create layered dirt background
+            const gradient = ctx.createRadialGradient(300, 150, 0, 300, 150, 400);
+            gradient.addColorStop(0, DIRT_COLORS[2]);
+            gradient.addColorStop(0.5, DIRT_COLORS[1]);
+            gradient.addColorStop(1, DIRT_COLORS[0]);
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 600, 300);
+            
+            // Add dirt texture
+            for (let i = 0; i < 2000; i++) {
+                const x = Math.random() * 600;
+                const y = Math.random() * 300;
+                const color = DIRT_COLORS[Math.floor(Math.random() * DIRT_COLORS.length)];
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, 1, 1);
+            }
+        }
+
+        function generateMapShapes() {
+            const canvas = document.getElementById('mapShapes');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas (transparent background)
+            ctx.clearRect(0, 0, 600, 300);
+            
+            // Add border walls (solid collision areas)
+            ctx.fillStyle = DOS_COLORS.BLACK;
+            ctx.fillRect(0, 0, 600, 5);     // Top
+            ctx.fillRect(0, 295, 600, 5);   // Bottom  
+            ctx.fillRect(0, 0, 5, 300);     // Left
+            ctx.fillRect(595, 0, 5, 300);   // Right
+            
+            // Add some internal obstacles
+            for (let i = 0; i < 8; i++) {
+                const x = 50 + Math.random() * 500;
+                const y = 50 + Math.random() * 200;
+                const w = 20 + Math.random() * 60;
+                const h = 10 + Math.random() * 30;
+                ctx.fillRect(x, y, w, h);
+            }
+        }
+
+        function generateMapFg() {
+            const canvas = document.getElementById('mapFg');
+            const ctx = canvas.getContext('2d');
+            
+            // Start with solid dirt
+            ctx.fillStyle = DIRT_COLORS[0];
+            ctx.fillRect(0, 0, 600, 300);
+            
+            // Dig out tunnel areas (make transparent)
+            ctx.globalCompositeOperation = 'destination-out';
+            
+            // Create winding tunnels
+            for (let tunnel = 0; tunnel < 6; tunnel++) {
+                let x = Math.random() * 600;
+                let y = Math.random() * 300;
+                const steps = 20 + Math.random() * 30;
+                
+                ctx.lineWidth = 8 + Math.random() * 12;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                
+                for (let step = 0; step < steps; step++) {
+                    x += (Math.random() - 0.5) * 30;
+                    y += (Math.random() - 0.5) * 20;
+                    x = Math.max(10, Math.min(590, x));
+                    y = Math.max(10, Math.min(290, y));
+                    ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function generateBases() {
+            const grid = document.getElementById('baseGrid');
+            grid.innerHTML = '';
+            
+            for (let player = 1; player <= 4; player++) {
+                const canvas = createCanvas(40, 40);
+                const ctx = canvas.getContext('2d');
+                drawBase(ctx, player - 1);
+                
+                const preview = document.createElement('div');
+                preview.className = 'preview';
+                preview.innerHTML = `
+                    <canvas width="80" height="80"></canvas>
+                    <br><strong>Player ${player} Base</strong>
+                    <div class="color-info">40x40 pixels</div>
+                `;
+                
+                const previewCanvas = preview.querySelector('canvas');
+                const previewCtx = previewCanvas.getContext('2d');
+                previewCtx.imageSmoothingEnabled = false;
+                previewCtx.scale(2, 2);
+                previewCtx.drawImage(canvas, 0, 0);
+                
+                grid.appendChild(preview);
+            }
+        }
+
+        function drawBase(ctx, playerNum) {
+            const wallColor = DOS_COLORS.GRAY;
+            const floorColor = DOS_COLORS.BLACK;
+            const roofColor = TANK_COLORS[playerNum];
+            
+            // Outer walls
+            ctx.fillStyle = wallColor;
+            ctx.fillRect(0, 0, 40, 40);
+            
+            // Inner floor
+            ctx.fillStyle = floorColor;
+            ctx.fillRect(3, 3, 34, 34);
+            
+            // Corner structures (where you can't go)
+            ctx.fillStyle = wallColor;
+            ctx.fillRect(3, 3, 12, 12);   // Top-left
+            ctx.fillRect(25, 3, 12, 12);  // Top-right
+            ctx.fillRect(3, 25, 12, 12);  // Bottom-left
+            ctx.fillRect(25, 25, 12, 12); // Bottom-right
+            
+            // Roof sections
+            ctx.fillStyle = roofColor;
+            ctx.fillRect(5, 5, 8, 8);     // Top-left roof
+            ctx.fillRect(27, 5, 8, 8);    // Top-right roof
+            ctx.fillRect(5, 27, 8, 8);    // Bottom-left roof
+            ctx.fillRect(27, 27, 8, 8);   // Bottom-right roof
+        }
+
+        function generateEnergyIcon() {
+            const canvas = document.getElementById('energyIcon');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = DOS_COLORS.YELLOW;
+            ctx.font = 'bold 24px monospace';
+            ctx.fillText('E', 8, 28);
+        }
+
+        function generateShieldIcon() {
+            const canvas = document.getElementById('shieldIcon');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = DOS_COLORS.BRIGHT_CYAN;
+            ctx.font = 'bold 24px monospace';
+            ctx.fillText('S', 8, 28);
+        }
+
+        function generateChatIcon() {
+            const canvas = document.getElementById('chatIcon');
+            const ctx = canvas.getContext('2d');
+            
+            // Speech bubble
+            ctx.fillStyle = DOS_COLORS.WHITE;
+            ctx.fillRect(4, 8, 32, 20);
+            ctx.fillStyle = DOS_COLORS.BLACK;
+            ctx.fillRect(6, 10, 28, 16);
+            
+            // Text lines
+            ctx.fillStyle = DOS_COLORS.WHITE;
+            ctx.fillRect(8, 12, 8, 2);
+            ctx.fillRect(8, 16, 12, 2);
+            ctx.fillRect(8, 20, 6, 2);
+            
+            // Speech bubble tail
+            ctx.fillStyle = DOS_COLORS.WHITE;
+            ctx.fillRect(10, 28, 4, 4);
+        }
+
+        // Download functions
+        function downloadCanvas(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function downloadTankImage(id) {
+            const canvas = window['tankCanvas_' + id];
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = `t${id.toString().padStart(2, '0')}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            }
+        }
+
+        function downloadBulletImage(id) {
+            const canvas = window['bulletCanvas_' + id];
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = `b${id}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            }
+        }
+
+        async function downloadAllTanks() {
+            const zip = new JSZip();
+            const tankFolder = zip.folder("tanks");
+            
+            console.log('Creating tank ZIP file...');
+            
+            for (let player = 1; player <= 4; player++) {
+                for (let dir = 1; dir <= 9; dir++) {
+                    if (dir === 5) continue;
+                    
+                    const canvas = window['tankCanvas_' + (player * 10 + dir)];
+                    if (canvas) {
+                        const dataURL = canvas.toDataURL();
+                        const base64Data = dataURL.split(',')[1];
+                        const filename = `t${(player * 10 + dir).toString().padStart(2, '0')}.png`;
+                        tankFolder.file(filename, base64Data, {base64: true});
+                    }
+                }
+            }
+            
+            try {
+                const content = await zip.generateAsync({type: "blob"});
+                saveAs(content, "tunneler-tanks.zip");
+                console.log('✅ Tank ZIP downloaded successfully!');
+            } catch (error) {
+                console.error('❌ Error creating tank ZIP:', error);
+                // Fallback to individual downloads
+                downloadTanksIndividually();
+            }
+        }
+
+        async function downloadAllBullets() {
+            const zip = new JSZip();
+            const bulletFolder = zip.folder("bullets");
+            
+            console.log('Creating bullet ZIP file...');
+            
+            const directions = [1,2,3,4,6,7,8,9];
+            directions.forEach(dir => {
+                const canvas = window['bulletCanvas_' + dir];
+                if (canvas) {
+                    const dataURL = canvas.toDataURL();
+                    const base64Data = dataURL.split(',')[1];
+                    const filename = `b${dir}.png`;
+                    bulletFolder.file(filename, base64Data, {base64: true});
+                }
+            });
+            
+            try {
+                const content = await zip.generateAsync({type: "blob"});
+                saveAs(content, "tunneler-bullets.zip");
+                console.log('✅ Bullet ZIP downloaded successfully!');
+            } catch (error) {
+                console.error('❌ Error creating bullet ZIP:', error);
+                // Fallback to individual downloads
+                downloadBulletsIndividually();
+            }
+        }
+
+        async function downloadAllAssets() {
+            const zip = new JSZip();
+            
+            // Create folder structure
+            const imagesFolder = zip.folder("assets/images");
+            const mapsFolder = zip.folder("assets/maps");
+            
+            console.log('Creating complete asset ZIP...');
+            
+            // Add tank images
+            for (let player = 1; player <= 4; player++) {
+                for (let dir = 1; dir <= 9; dir++) {
+                    if (dir === 5) continue;
+                    const canvas = window['tankCanvas_' + (player * 10 + dir)];
+                    if (canvas) {
+                        const dataURL = canvas.toDataURL();
+                        const base64Data = dataURL.split(',')[1];
+                        const filename = `t${(player * 10 + dir).toString().padStart(2, '0')}.png`;
+                        imagesFolder.file(filename, base64Data, {base64: true});
+                    }
+                }
+            }
+            
+            // Add bullet images
+            [1,2,3,4,6,7,8,9].forEach(dir => {
+                const canvas = window['bulletCanvas_' + dir];
+                if (canvas) {
+                    const dataURL = canvas.toDataURL();
+                    const base64Data = dataURL.split(',')[1];
+                    imagesFolder.file(`b${dir}.png`, base64Data, {base64: true});
+                }
+            });
+            
+            // Add UI icons
+            ['energyIcon', 'shieldIcon', 'chatIcon'].forEach((id, index) => {
+                const canvas = document.getElementById(id);
+                if (canvas) {
+                    const dataURL = canvas.toDataURL();
+                    const base64Data = dataURL.split(',')[1];
+                    const filenames = ['e.png', 's.png', 'chat.png'];
+                    imagesFolder.file(filenames[index], base64Data, {base64: true});
+                }
+            });
+            
+            // Add map files (scaled to full size)
+            const mapIds = ['mapBg', 'mapShapes', 'mapFg'];
+            const mapFilenames = ['map2bg.png', 'map2shapes.png', 'map2fg.png'];
+            
+            mapIds.forEach((id, index) => {
+                const sourceCanvas = document.getElementById(id);
+                if (sourceCanvas) {
+                    // Scale up to full size (1200x600)
+                    const fullCanvas = createCanvas(1200, 600);
+                    const fullCtx = fullCanvas.getContext('2d');
+                    fullCtx.imageSmoothingEnabled = false;
+                    fullCtx.scale(2, 2);
+                    fullCtx.drawImage(sourceCanvas, 0, 0);
+                    
+                    const dataURL = fullCanvas.toDataURL();
+                    const base64Data = dataURL.split(',')[1];
+                    mapsFolder.file(mapFilenames[index], base64Data, {base64: true});
+                }
+            });
+            
+            try {
+                const content = await zip.generateAsync({type: "blob"});
+                saveAs(content, "tunneler-complete-assets.zip");
+                console.log('✅ Complete asset ZIP downloaded successfully!');
+            } catch (error) {
+                console.error('❌ Error creating complete ZIP:', error);
+                alert('Error creating ZIP file. Please try downloading assets individually.');
+            }
+        }
+
+        // Fallback functions for individual downloads
+        function downloadTanksIndividually() {
+            console.log('Falling back to individual tank downloads...');
+            for (let player = 1; player <= 4; player++) {
+                for (let dir = 1; dir <= 9; dir++) {
+                    if (dir === 5) continue;
+                    setTimeout(() => {
+                        downloadTankImage(player * 10 + dir);
+                    }, (player * 8 + dir) * 200);
+                }
+            }
+        }
+
+        function downloadBulletsIndividually() {
+            console.log('Falling back to individual bullet downloads...');
+            [1,2,3,4,6,7,8,9].forEach((dir, index) => {
+                setTimeout(() => {
+                    downloadBulletImage(dir);
+                }, index * 200);
+            });
+        }
+
+        // Initialize
+        window.onload = function() {
+            console.log('🚀 Tunneler Asset Generator Ready!');
+            generateEnergyIcon();
+            generateShieldIcon(); 
+            generateChatIcon();
+            generateMapBg();
+            generateMapShapes();
+        };
+    </script>
+</body>
+</html>
