@@ -7,7 +7,14 @@
  * base-64 encoded to make sure that they don't contain spaces.
  */
 
-const SERVER_URL = `wss://${location.host}/`;
+// Automatically detect WebSocket protocol based on page protocol
+const getWebSocketURL = () => {
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = location.host;
+  return `${protocol}//${host}/`;
+};
+
+const SERVER_URL = getWebSocketURL();
 
 // Communication protocol
 const MSG_INIT = 'I';
@@ -33,6 +40,8 @@ const outbox = [];
 
 // Connect to server. Push incoming messages on the queue
 function connect() {
+  console.log(`Connecting to: ${SERVER_URL}`); // Debug log to show which protocol is being used
+  
   socket = new WebSocket(SERVER_URL);
 
   // Listen for messages
@@ -51,6 +60,11 @@ function connect() {
   });
 
   socket.addEventListener('close', function (event) {
+    connected = false;
+  });
+
+  socket.addEventListener('error', function (event) {
+    console.error('WebSocket error:', event);
     connected = false;
   });
 }
