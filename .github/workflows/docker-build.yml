@@ -19,6 +19,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write    # Required for attestation
+      attestations: write # Required for attestation
 
     steps:
     - name: Checkout repository
@@ -67,7 +69,7 @@ jobs:
           BUILDPLATFORM=${{ matrix.platform }}
 
     - name: Generate artifact attestation
-      if: github.event_name != 'pull_request' && steps.meta.outputs.tags != ''
+      if: github.event_name != 'pull_request' && steps.meta.outputs.tags != '' && github.event_name == 'release'
       uses: actions/attest-build-provenance@v1
       with:
         subject-name: ${{ env.REGISTRY }}/${{ secrets.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
