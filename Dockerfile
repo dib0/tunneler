@@ -9,7 +9,9 @@ COPY package*.json ./
 
 # Install dependencies
 # Use npm install instead of npm ci since package-lock.json might not exist
-RUN npm install --omit=dev && npm cache clean --force
+RUN npm config set registry https://registry.npmjs.org/ && \
+    npm install --omit=dev --no-audit --no-fund && \
+    npm cache clean --force
 
 # Copy application files
 COPY . .
