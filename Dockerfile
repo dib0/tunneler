@@ -4,13 +4,17 @@ FROM node:18-alpine
 # Set working directory in container
 WORKDIR /app
 
+# Install build dependencies for potential native modules
+RUN apk add --no-cache python3 make g++
+
 # Copy package.json and package-lock.json (if available)
 COPY package*.json ./
 
-# Install dependencies
-# Use npm install instead of npm ci since package-lock.json might not exist
+# Install dependencies with verbose logging and error handling
 RUN npm config set registry https://registry.npmjs.org/ && \
-    npm install --omit=dev --no-audit --no-fund && \
+    npm config set audit false && \
+    npm config set fund false && \
+    npm install --omit=dev --verbose && \
     npm cache clean --force
 
 # Copy application files
