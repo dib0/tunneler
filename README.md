@@ -1,3 +1,5 @@
+[![Build and Push Docker Image](https://github.com/dib0/tunneler/actions/workflows/docker-build.yml/badge.svg)](https://github.com/dib0/tunneler/actions/workflows/docker-build.yml)
+
 # Tunneler
 
 This project is a remake of Geoffrey Silverton's classic [Tunneler](https://tunneler.org) game for DOS. The game is developed as a HTML5 Canvas and Javascript app, with a small node.js server that facilitates communication between the players. The graphics are a bit different from the original, and some gameplay elements are changed (for example, the map is not randomly generated) but the basic gameplay is the same.
