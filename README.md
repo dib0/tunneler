@@ -10,7 +10,17 @@ You can play the game on: [https://tunneler.dib0.nl](https://tunneler.dib0.nl)
 
 ## Quick Start
 
-### Option 1: Docker (Recommended)
+### Option 1: Docker Hub (Recommended)
+The easiest way to run Tunneler locally:
+
+```bash
+docker pull dib0/tunneler:latest
+docker run -p 3000:3000 dib0/tunneler:latest
+
+# Access the game at http://localhost:3000
+```
+
+### Option 2: Docker
 The easiest way to run Tunneler locally:
 
 ```bash
@@ -24,7 +34,7 @@ docker-compose up --build
 # Access the game at http://localhost:3000
 ```
 
-### Option 2: Local Node.js
+### Option 3: Local Node.js
 If you prefer running directly with Node.js:
 
 ```bash
@@ -76,6 +86,12 @@ npm start
 4. Refresh your browser to see changes
 
 ## Deployment
+
+### Docker Hub
+```bash
+docker pull dib0/tunneler:latest
+docker run -p 3000:3000 dib0/tunneler:latest
+```
 
 ### Docker Production Deployment
 ```bash
