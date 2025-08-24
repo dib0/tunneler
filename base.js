@@ -99,8 +99,30 @@ function blockBaseWalls(x, y) {
 function drawBaseWalls(ctx, base, x, y) {
   const data = baseDigData();
   
-  // Draw the walls
-  ctx.fillStyle = 'lightgreen';
+  // Tank colors matching your new palette
+  const TANK_COLORS = [
+    '#00ff00', // Player 1 - Green
+    '#0000ff', // Player 2 - Blue  
+    '#ff0000', // Player 3 - Red
+    '#800080'  // Player 4 - Purple
+  ];
+  
+  // Function to darken color by 50%
+  function darkenColor(color, factor = 0.5) {
+    const hex = color.replace('#', '');
+    const r = Math.floor(parseInt(hex.substr(0, 2), 16) * factor);
+    const g = Math.floor(parseInt(hex.substr(2, 2), 16) * factor);
+    const b = Math.floor(parseInt(hex.substr(4, 2), 16) * factor);
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  }
+  
+  // Get player colors
+  const playerIndex = (parseInt(base.id) - 1) % 4;
+  const roofColor = TANK_COLORS[playerIndex];
+  const wallColor = darkenColor(roofColor, 0.5);
+  
+  // Draw the walls (50% darker than roof)
+  ctx.fillStyle = wallColor;
   for (let ry = 0; ry < BASE_HEIGHT; ry++) {
     for (let rx = 0; rx < BASE_WIDTH; rx++) {
       if (data[ry][rx] == '2') {
@@ -108,19 +130,9 @@ function drawBaseWalls(ctx, base, x, y) {
       }
     }
   }
-
-  // Different roof colors for the different players
-  if (parseInt(base.id) % 4 == 1) {
-    ctx.fillStyle = 'lightblue';
-  } else if (parseInt(base.id) % 4 == 2) {
-    ctx.fillStyle = 'pink';
-  } else if (parseInt(base.id) % 4 == 3) {
-    ctx.fillStyle = 'cyan';
-  } else {
-    ctx.fillStyle = 'red';
-  }
-
-  // Draw the roof
+  
+  // Draw the roof (tank color)
+  ctx.fillStyle = roofColor;
   for (let ry = 0; ry < BASE_HEIGHT; ry++) {
     for (let rx = 0; rx < BASE_WIDTH; rx++) {
       if (data[ry][rx] == '3') {
