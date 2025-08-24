@@ -140,6 +140,42 @@ function drawBaseWalls(ctx, base, x, y) {
       }
     }
   }
+  
+  // Draw player name at bottom left corner of the base
+  // Find the player object to get the name
+  let playerName = '';
+  if (typeof player !== 'undefined' && player.id == base.id) {
+    playerName = player.name;
+  } else if (typeof opponents !== 'undefined') {
+    const opponent = opponents.get(base.id);
+    if (opponent) {
+      playerName = opponent.name;
+    }
+  }
+  
+  // Only draw name if we found one and it's not too long
+  if (playerName && playerName.length > 0) {
+    const maxLength = 8; // Limit to fit in base
+    const displayName = playerName.length > maxLength ? 
+      playerName.substring(0, maxLength - 1) + '...' : playerName;
+    
+    // Set text properties for pixel-perfect rendering
+    ctx.fillStyle = '#ffffff'; // White text for visibility
+    ctx.font = '8px monospace'; // Small monospace font
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    
+    // Position at bottom left of base (in the dug area)
+    // Looking at the base pattern, bottom left has dug areas around x=3-15, y=35-37
+    const textX = x + 3; // Left edge of dug area
+    const textY = y + 37; // Bottom area before the wall
+    
+    // Draw text with a subtle shadow for better readability
+    ctx.fillStyle = '#000000';
+    ctx.fillText(displayName, textX + 1, textY + 1); // Shadow
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(displayName, textX, textY); // Main text
+  }
 }
 
 // This is the pixel data of the base image. 0 = sand, 1 = dug, 2 = wall, 3 = roof
