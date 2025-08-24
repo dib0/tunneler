@@ -141,7 +141,7 @@ function drawBaseWalls(ctx, base, x, y) {
     }
   }
   
-  // Draw player name at bottom left corner of the base
+  // Draw player name at bottom of base, centered horizontally
   // Find the player object to get the name
   let playerName = '';
   if (typeof player !== 'undefined' && player.id == base.id) {
@@ -153,28 +153,24 @@ function drawBaseWalls(ctx, base, x, y) {
     }
   }
   
-  // Only draw name if we found one and it's not too long
+  // Only draw name if we found one and it's not empty
   if (playerName && playerName.length > 0) {
-    const maxLength = 8; // Limit to fit in base
-    const displayName = playerName.length > maxLength ? 
-      playerName.substring(0, maxLength - 1) + '...' : playerName;
+    // Set text properties - smaller font for all names
+    ctx.font = '6px monospace'; // Smaller monospace font
+    ctx.textAlign = 'center'; // Center alignment horizontally
+    ctx.textBaseline = 'top'; // Align from top so we can position at bottom precisely
     
-    // Set text properties for pixel-perfect rendering
-    ctx.fillStyle = '#ffffff'; // White text for visibility
-    ctx.font = '8px monospace'; // Small monospace font
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'bottom';
+    // Calculate horizontal center of the base
+    const centerX = x + BASE_WIDTH / 2;
     
-    // Position at bottom left of base (in the dug area)
-    // Looking at the base pattern, bottom left has dug areas around x=3-15, y=35-37
-    const textX = x + 3; // Left edge of dug area
-    const textY = y + 37; // Bottom area before the wall
+    // Position at bottom of the base (just below the base structure)
+    const textY = y + BASE_HEIGHT + 1; // 1 pixel below the base
     
     // Draw text with a subtle shadow for better readability
     ctx.fillStyle = '#000000';
-    ctx.fillText(displayName, textX + 1, textY + 1); // Shadow
+    ctx.fillText(playerName, centerX + 1, textY + 1); // Shadow
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(displayName, textX, textY); // Main text
+    ctx.fillText(playerName, centerX, textY); // Main text
   }
 }
 

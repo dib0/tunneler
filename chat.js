@@ -19,6 +19,12 @@ function sendChatFromInputField() {
       player.name = text.substring(6);
       sendMessage(MSG_NAME, {id: player.id, name: player.name});
       displayAlert('Your name is now: <span style="color: yellow">' + player.name + '</span>');
+
+      // Force a redraw to update the base name display immediately
+      if (typeof redrawScreen === 'function') {
+        redrawRequest = true; // Ensure the redraw flag is set
+        redrawScreen();
+      }      
     }
   } else if (text.toLowerCase().startsWith('/help')) {
     displayHelpMessage();

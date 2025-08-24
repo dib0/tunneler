@@ -1,4 +1,3 @@
-# Remove the version line as it's obsolete in newer Docker Compose versions
 services:
   tunneler:
     build: .
