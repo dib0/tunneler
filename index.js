@@ -29,6 +29,11 @@ let counter = 0;
 // Trace of all messages, that is replayed for new players
 const trace = [];
 
+// Generate seed when server starts
+let currentMapSeed = Math.floor(Date.now() / 1000); 
+
+const MSG_MAP_SEED = 'S';
+
 // Instantiate basic HTTP server that serves static files
 var serve = serveStatic("./");
 var server = http.createServer(function(request, response) {
@@ -53,6 +58,9 @@ wss.on('request', function(request) {
 
   // Send the trace of all previous actions to the player
   trace.forEach(action => ws.sendUTF(action));
+
+  // Send MAP_SEED message first so client can generate the correct map
+  ws.sendUTF('S ' + currentMapSeed);
 
   // Send INIT message with the new ID, so player will join the game
   ws.sendUTF('I ' + id);
@@ -93,3 +101,15 @@ function multicast(source, message) {
     }
   });
 }
+
+function generateNewMapSeed() {
+  currentMapSeed = Math.floor(Date.now() / 1000);
+  console.log('New map seed generated:', currentMapSeed);
+  
+  // Broadcast new seed to all clients
+  multicast(null, 'S ' + currentMapSeed);
+  
+  // Clear trace since old actions won't work with new map
+  trace.length = 0;
+}
+

@@ -44,15 +44,21 @@ function loadImage(filename) {
 
 // Load map, images and sounds
 function loadAssets() {
-  bgImage = loadImage(MAPS_URL_PREFIX + 'map2bg.png');
-  shapesImage = loadImage(MAPS_URL_PREFIX + 'map2shapes.png');
-  mapImage = loadImage(MAPS_URL_PREFIX + 'map2fg.png');
-
+  // Account for the 3 generated maps in the ready counter
+  ready += 3;
+  
+  // Generate random maps using server seed if available
+  const mapSeed = window.sharedMapSeed || Math.floor(Date.now() / 60000);
+  generateRandomMaps(mapSeed);
+    
+  // Load bullet images
   for (let i = 1; i <= 9; i++) {
     if (i % 10 != 5) {
       bulletImages.set(i, loadImage(IMAGES_URL_PREFIX + 'b' + i + '.png'));
     }
   }
+  
+  // Load tank images
   for (let i = 1; i <= 49; i++) {
     if (i % 10 != 0 && i % 10 != 5) {
       tankImages.set(i, loadImage(IMAGES_URL_PREFIX + 't' + i.toString().padStart(2, '0') + '.png'));

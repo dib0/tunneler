@@ -14,15 +14,21 @@ const BASE_HEIGHT = 40;
 // List of bases
 const bases = [];
 
-// Generate a random location for a new base
+// Generate a random location for a new base (with logic to place
+// bases not too close to each other)
 function randomBaseLocation(id) {
+  // Use the optimal placement if available
+  if (typeof generateOptimalBaseLocation !== 'undefined') {
+    return generateOptimalBaseLocation(id);
+  }
+  
+  // Fallback to old method if map generator not available
   let rect;
-
   do {
     rect = {
       id: id,
-      x: Math.floor(Math.random() * MAP_WIDTH - (BASE_WIDTH * 2)),
-      y: Math.floor(Math.random() * MAP_HEIGHT - (BASE_HEIGHT * 2)),
+      x: Math.floor(Math.random() * (MAP_WIDTH - BASE_WIDTH * 2)) + BASE_WIDTH,
+      y: Math.floor(Math.random() * (MAP_HEIGHT - BASE_HEIGHT * 2)) + BASE_HEIGHT,
       w: BASE_WIDTH,
       h: BASE_HEIGHT
     };

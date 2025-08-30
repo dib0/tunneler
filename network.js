@@ -27,6 +27,7 @@ const MSG_LOST = 'L';
 const MSG_TEXT = 'T';
 const MSG_NAME = 'N';
 const MSG_EXIT = 'X';
+const MSG_MAP_SEED = 'S';
 
 // Connection to the server
 let socket;
@@ -79,7 +80,9 @@ function getMessage() {
     // console.log("< " + s);
     const arr = s.split(" ");
     const action = arr[0];
-    if (action == MSG_INIT) {
+    if (action == MSG_MAP_SEED) {
+      return {type: MSG_MAP_SEED, seed: parseInt(arr[1])};
+    } else if (action == MSG_INIT) {
       return {type: MSG_INIT, id: arr[1]};
     } else if (action == MSG_JOIN) {
       return {type: MSG_JOIN, id: arr[1]};

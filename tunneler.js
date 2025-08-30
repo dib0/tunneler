@@ -11,7 +11,7 @@
  * state, ready, reload, bullets, opponents, alive, quit,
  * fgImage, bgImage, shapesImage, mapImage, sndFire1, sndFire2, sndLost,
  * MSG_INIT, MSG_JOIN, MSG_MOVE, MSG_BASE, MSG_DIG, MSG_FIRE, MSG_LOST, MSG_TEXT, MSG_NAME, MSG_EXIT,
- * WAIT_FRAMES_ON_RESTART
+ * WAIT_FRAMES_ON_RESTART, MSG_MAP_SEED
  */
 
 const MAP_WIDTH = 1200;
@@ -215,8 +215,19 @@ function processEvents() {
   while (messageReceived()) {
     const msg = getMessage();
 
+  // Server sent map seed - generate map with this seed
+  if (msg.type == MSG_MAP_SEED) {
+    console.log('Received map seed from server:', msg.seed);
+    window.sharedMapSeed = msg.seed;
+
+    // Regenerate map with server seed if already initialized
+    if (initialized && typeof generateRandomMaps !== 'undefined') {
+      generateRandomMaps(msg.seed);
+      redrawRequest = true;
+    }
+
     // Server confirmed the connection
-    if (msg.type == MSG_INIT) {
+    } else if (msg.type == MSG_INIT) {
       initGameState(msg.id);
       redrawRequest = true;
     
@@ -302,10 +313,15 @@ function processEvents() {
   if (redrawRequest) {
     redrawScreen();
   }
-}
+  }
 
 // Dig initial tank position and let opponents know where we are.
 function initGameState(id) {
+  // Reset base manager for new game
+  if (typeof resetBaseManager !== 'undefined') {
+    resetBaseManager();
+  }
+  
   // Generate base
   let base = randomBaseLocation(id);
   addBase(base);
