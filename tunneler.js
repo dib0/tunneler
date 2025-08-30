@@ -14,8 +14,8 @@
  * WAIT_FRAMES_ON_RESTART, MSG_MAP_SEED
  */
 
-const MAP_WIDTH = 1200;
-const MAP_HEIGHT = 600;
+const MAP_WIDTH = 1600;
+const MAP_HEIGHT = 800;
 
 const SCALE_X = 10;
 const SCALE_Y = 10;

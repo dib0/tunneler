@@ -251,7 +251,7 @@ function smoothClassicTerrain(terrain, width, height) {
 
 // Clear borders for better gameplay
 function clearBorders(terrain, width, height) {
-  const borderSize = 30;
+  const borderSize = 5;
   
   // Top and bottom borders
   for (let y = 0; y < borderSize; y++) {
@@ -428,6 +428,29 @@ class BaseManager {
   scoreBaseLocation(candidate, mapWidth, mapHeight, terrainData) {
     let score = 1.0;
     
+    // First check: Must be placed entirely in diggable area (terrain[i] === 0)
+    let solidPixels = 0;
+    const totalPixels = candidate.w * candidate.h;
+    
+    for (let y = 0; y < candidate.h; y++) {
+      for (let x = 0; x < candidate.w; x++) {
+        const mapX = Math.floor(candidate.x + x);
+        const mapY = Math.floor(candidate.y + y);
+        
+        if (mapX >= 0 && mapX < mapWidth && mapY >= 0 && mapY < mapHeight) {
+          const terrainIndex = mapY * mapWidth + mapX;
+          if (terrainData && terrainData[terrainIndex] === 0) {
+            solidPixels++;
+          }
+        }
+      }
+    }
+    
+    // Reject locations with ANY solid rock underneath
+    if (solidPixels > 0) {
+      return 0; // Invalid location
+    }
+    
     // Check distance from other bases
     for (const base of this.existingBases) {
       const distance = Math.sqrt(
@@ -438,28 +461,6 @@ class BaseManager {
         score -= (MIN_BASE_DISTANCE - distance) / MIN_BASE_DISTANCE;
       }
     }
-    
-    // Check for terrain interference
-    let terrainConflicts = 0;
-    const totalPixels = candidate.w * candidate.h;
-    
-    for (let y = 0; y < candidate.h; y++) {
-      for (let x = 0; x < candidate.w; x++) {
-        const mapX = Math.floor(candidate.x + x);
-        const mapY = Math.floor(candidate.y + y);
-        
-        if (mapX >= 0 && mapX < mapWidth && mapY >= 0 && mapY < mapHeight) {
-          const terrainIndex = mapY * mapWidth + mapX;
-          if (terrainData && terrainData[terrainIndex] === 1) {
-            terrainConflicts++;
-          }
-        }
-      }
-    }
-    
-    // Penalize locations with too much terrain interference
-    const terrainPenalty = (terrainConflicts / totalPixels) * 0.5;
-    score -= terrainPenalty;
     
     // Prefer locations closer to center but not too close to edges
     const centerX = mapWidth / 2;
@@ -472,8 +473,7 @@ class BaseManager {
     score = score * 0.7 + centerScore * 0.3;
     
     return Math.max(0, Math.min(1, score));
-  }
-  
+  }  
   // Clear all existing bases (for new game)
   reset() {
     this.existingBases = [];
