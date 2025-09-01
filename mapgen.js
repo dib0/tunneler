@@ -8,8 +8,8 @@ const INITIAL_HEIGHT_VARIATION = 0.4; // Initial height variation
 const MIN_TUNNEL_WIDTH = 8; // Minimum tunnel width
 const MAX_TUNNEL_WIDTH = 20; // Maximum tunnel width
 const TUNNEL_COUNT = 12; // Number of main tunnels
-const MIN_BASE_DISTANCE = 200; // Minimum distance between bases
-const BORDER_CLEARANCE = 100; // Clearance from map edges for bases
+const MIN_BASE_DISTANCE = 500; // Minimum distance between bases
+const BORDER_CLEARANCE = 30; // Clearance from map edges for bases
 
 // Simple seeded random number generator
 class SeededRandom {
