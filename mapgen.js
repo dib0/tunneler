@@ -3,7 +3,7 @@
  */
 
 // Map generation parameters
-const TERRAIN_ROUGHNESS = 0.7; // How rough the terrain is (0.0 to 1.0)
+const TERRAIN_ROUGHNESS = 0.4; // How rough the terrain is (0.0 to 1.0)
 const INITIAL_HEIGHT_VARIATION = 0.4; // Initial height variation
 const MIN_TUNNEL_WIDTH = 8; // Minimum tunnel width
 const MAX_TUNNEL_WIDTH = 20; // Maximum tunnel width
