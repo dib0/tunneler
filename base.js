@@ -90,8 +90,15 @@ function refuel() {
 // Dig a base and add the walls as blocking objects on the map
 function addBase(base) {
   bases.push(base);
-  digBase(base);
-  blockBaseWalls(base.x, base.y);
+
+  // Only dig and block if buffer is available
+  if (typeof digBase !== 'undefined' && bufferCtx) {
+    digBase(base);
+    blockBaseWalls(base.x, base.y);
+    console.log('Base visual elements added for player', base.id);
+  } else {
+    console.log('Base added to list but visual elements skipped - buffer not ready');
+  }
 }
 
 // Add the walls of the base at this location in shapesData (map of all shapes that block movement and bullets)

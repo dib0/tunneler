@@ -162,6 +162,17 @@ function initCanvas() {
   viewport.onfocus = resetKeys;
   viewport.onblur = resetKeys;
 
+  // Redraw all existing bases on the new canvas
+  if (bases.length > 0) {
+    console.log('Redrawing', bases.length, 'existing bases on initialized canvas');
+    bases.forEach(base => {
+      if (typeof digBase !== 'undefined') {
+        digBase(base);
+        blockBaseWalls(base.x, base.y);
+      }
+    });
+  }  
+
   setupEventListeners();
 }
 
@@ -264,11 +275,14 @@ function processEvents() {
       }
     } else if (msg.type == MSG_BASE) {
       // Process base messages even if canvas isn't fully ready
-      if (buffer) { // Only need buffer, not full canvas
+      if (buffer && bufferCtx) {
+        console.log('Adding base for player', msg.base.id, 'at', msg.base.x, msg.base.y);
         addBase(msg.base);
-        if (collides && lens && collides(msg.base, lens)) {
-          redrawRequest = true;
-        }
+        
+        // Force a redraw to ensure the base is visible
+        redrawRequest = true;
+      } else {
+        console.log('Buffer not ready for base placement, skipping');
       }
     } else if (msg.type == MSG_DIG) {
       // Process dig messages even if canvas isn't fully ready  
