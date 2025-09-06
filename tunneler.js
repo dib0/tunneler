@@ -33,6 +33,7 @@ const TARGET_CANVAS_ID = 'tun_viewport_canvas';
 
 const EVENT_LOOP_INTERVAL = 100;
 
+let pendingMessages = [];
 let expectingServerMap = false;
 let pendingInitMessage = null;
 
@@ -260,89 +261,35 @@ function processEvents() {
         initGameState(msg.id);
         redrawRequest = true;
       }
+    // Queue other messages if canvas isn't ready
+    } else if (!viewport || !viewportCtx || !buffer) {
+      console.log('Canvas not ready, queuing message:', msg.type);
+      pendingMessages.push(msg);
     } else if (msg.type == MSG_JOIN) {
       if (initialized) {
         displayAlert('Player' + msg.id + ' has joined the game!');
       }
-    } else if (msg.type == MSG_MOVE) {
-      if (buffer) { // Only need buffer, not full canvas
-        const before = onScreen(msg.player.id);
-        opponents.set(msg.player);
-        const after = onScreen(msg.player.id);
-        if (before || after) {
-          redrawRequest = true;
-        }
-      }
-    } else if (msg.type == MSG_BASE) {
-      // Process base messages even if canvas isn't fully ready
-      if (buffer && bufferCtx) {
-        console.log('Adding base for player', msg.base.id, 'at', msg.base.x, msg.base.y);
-        addBase(msg.base);
-        
-        // Force a redraw to ensure the base is visible
-        redrawRequest = true;
-      } else {
-        console.log('Buffer not ready for base placement, skipping');
-      }
-    } else if (msg.type == MSG_DIG) {
-      // Process dig messages even if canvas isn't fully ready  
-      if (buffer && bufferCtx) { // Only need buffer context
-        digRect(msg.area.x, msg.area.y, msg.area.w, msg.area.h);
-        if (collides && lens && collides(msg.area, lens)) {
-          redrawRequest = true;
-        }
-      }      
-    } else if (msg.type == MSG_FIRE) {
-      if (initialized) {
-        // Check if the firing player exists before calling fire
-        const firingPlayer = (msg.id == player.id) ? player : opponents.get(msg.id);
-        if (firingPlayer) {
-          fire(msg.id);
-        } else {
-          console.log('Fire message from unknown player:', msg.id);
-        }
-      }
-      if (onScreen(msg.id)) {
-        playSound(sndFire2);
-        redrawRequest = true;
-      }
-    } else if (msg.type == MSG_LOST) {
-      if (buffer) { // Only need buffer, not full canvas
-        tankDestroyed(msg.player.id, msg.player.by);
-        redrawRequest = true;
-      }
-    } else if (msg.type == MSG_TEXT) {
-      if (initialized) {
-        chatReceived(msg.message.name, msg.message.text);
-      }
-    } else if (msg.type == MSG_NAME) {
-      if (initialized) {
-        displayAlert('Player' + msg.player.id + ' is now known as: ' + msg.player.name);
-      }
-      if (buffer) { // Only need buffer, not full canvas
-        let opp = opponents.get(msg.player.id);
-        opp.name = msg.player.name;
-        opponents.set(opp);
-        if (onScreen(msg.player.id)) {
-          redrawRequest = true;
-        }
-      }
-    } else if (msg.type == MSG_EXIT) {
-      let opp = opponents.get(msg.id);
-      if (initialized) {
-        displayAlert(((opp && opp.name) ? opp.name : ('Player' + msg.id)) + ' has left the game!');
-      }
-      opponents.remove(opponents.get(msg.id));
+    } else {
+      // Process immediately if canvas is ready
+      processGameMessage(msg);
     }
   }
 
-  // Process pending INIT message if canvas is now ready
+  // Process pending INIT and then all queued messages
   if (pendingInitMessage && viewport && viewportCtx && buffer) {
     console.log('🎮 Processing pending INIT message, ID:', pendingInitMessage.id);
     initGameState(pendingInitMessage.id);
     pendingInitMessage = null;
+    
+    // Now process all the queued messages
+    console.log('Processing', pendingMessages.length, 'queued messages');
+    while (pendingMessages.length > 0) {
+      const queuedMsg = pendingMessages.shift();
+      processGameMessage(queuedMsg);
+    }
+  
     redrawRequest = true;
-  }  
+  }
 
   // Don't process game logic until canvas is initialized
   if (!viewport || !viewportCtx || !buffer) {
@@ -405,10 +352,71 @@ function processEvents() {
   }
 }
 
-function assetsReady() {
-  // Check if essential tank images are loaded
-  const testTankImage = tankImages.get(18); // Player 1, direction 8
-  return testTankImage && testTankImage.complete && testTankImage.naturalWidth > 0;
+function processGameMessage(msg) {
+  if (msg.type == MSG_JOIN) {
+    if (initialized) {
+      displayAlert('Player' + msg.id + ' has joined the game!');
+    }
+  } else if (msg.type == MSG_MOVE) {
+    const before = onScreen(msg.player.id);
+    opponents.set(msg.player);
+    const after = onScreen(msg.player.id);
+    if (before || after) {
+      redrawRequest = true;
+    }
+  } else if (msg.type == MSG_BASE) {
+    console.log('Processing BASE message for player', msg.base.id);
+    addBase(msg.base);
+    if (collides && lens && collides(msg.base, lens)) {
+      redrawRequest = true;
+    }
+  } else if (msg.type == MSG_DIG) {
+    digRect(msg.area.x, msg.area.y, msg.area.w, msg.area.h);
+    if (collides && lens && collides(msg.area, lens)) {
+      redrawRequest = true;
+    }
+  } else if (msg.type == MSG_FIRE) {
+    if (initialized) {
+      // Check if the firing player exists before calling fire
+      const firingPlayer = (msg.id == player.id) ? player : opponents.get(msg.id);
+      if (firingPlayer) {
+        fire(msg.id);
+      } else {
+        console.log('Fire message from unknown player:', msg.id);
+      }
+    }
+    if (onScreen && onScreen(msg.id)) {
+      playSound(sndFire2);
+      redrawRequest = true;
+    }
+  } else if (msg.type == MSG_LOST) {
+    tankDestroyed(msg.player.id, msg.player.by);
+    redrawRequest = true;
+  } else if (msg.type == MSG_TEXT) {
+    if (initialized) {
+      chatReceived(msg.message.name, msg.message.text);
+    }
+  } else if (msg.type == MSG_NAME) {
+    if (initialized) {
+      displayAlert('Player' + msg.player.id + ' is now known as: ' + msg.player.name);
+    }
+    let opp = opponents.get(msg.player.id);
+    if (opp) {
+      opp.name = msg.player.name;
+      opponents.set(opp);
+      if (onScreen && onScreen(msg.player.id)) {
+        redrawRequest = true;
+      }
+    }
+  } else if (msg.type == MSG_EXIT) {
+    let opp = opponents.get(msg.id);
+    if (initialized) {
+      displayAlert(((opp && opp.name) ? opp.name : ('Player' + msg.id)) + ' has left the game!');
+    }
+    if (opp) {
+      opponents.remove(opp);
+    }
+  }
 }
 
 // Center the lens on the player, except when near the edge
