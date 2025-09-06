@@ -34,6 +34,7 @@ const TARGET_CANVAS_ID = 'tun_viewport_canvas';
 const EVENT_LOOP_INTERVAL = 100;
 
 let pendingMessages = [];
+let processingQueuedMessages = false;
 let expectingServerMap = false;
 let pendingInitMessage = null;
 
@@ -222,56 +223,51 @@ function resizeViewport() {
   initialized = true;
 }
 
-// Main event loop: process pressed keys, process received messages, redraw screen.
 function processEvents() {
-
-  // ALWAYS process network messages first, regardless of canvas state
-  while (messageReceived()) {
-    const msg = getMessage();
-  
-    if (!msg) {
-      console.log('⚠️ Received null message');
-      continue;
-    }
-
-    console.log('📨 Processing message type:', msg.type);
-
-    // Handle complete map data from server - ALWAYS process this
-    if (msg.type == 'MAP_DATA') {
-      console.log('Received MAP_DATA message from server');
-      expectingServerMap = false;
-      initializeBufferWithServerMap(msg.mapData);
-      redrawRequest = true;    
-    } else if (msg.type == MSG_MAP_SEED) {
-      console.log('🌱 Received MAP_SEED from server:', msg.seed);
-      expectingServerMap = false;
-      window.sharedMapSeed = msg.seed;
-      window.serverMapReceived = true;
-
-      if (initialized && typeof generateRandomMaps !== 'undefined') {
-        generateRandomMaps(msg.seed);
-        redrawRequest = true;
+  // Only process new messages if we're not currently processing queued messages
+  if (!processingQueuedMessages) {
+    while (messageReceived()) {
+      const msg = getMessage();
+    
+      if (!msg) {
+        console.log('⚠️ Received null message');
+        continue;
       }
-    } else if (msg.type == MSG_INIT) {
-      if (!viewport || !viewportCtx || !buffer) {
-        console.log('Canvas not ready, storing INIT message for later, ID:', msg.id);
-        pendingInitMessage = msg;
+
+      console.log('📨 Processing message type:', msg.type);
+
+      // Always process these immediately
+      if (msg.type == 'MAP_DATA') {
+        console.log('Received MAP_DATA message from server');
+        expectingServerMap = false;
+        initializeBufferWithServerMap(msg.mapData);
+        redrawRequest = true;    
+      } else if (msg.type == MSG_MAP_SEED) {
+        console.log('🌱 Received MAP_SEED from server:', msg.seed);
+        expectingServerMap = false;
+        window.sharedMapSeed = msg.seed;
+        window.serverMapReceived = true;
+        if (initialized && typeof generateRandomMaps !== 'undefined') {
+          generateRandomMaps(msg.seed);
+          redrawRequest = true;
+        }
+      } else if (msg.type == MSG_INIT) {
+        if (!viewport || !viewportCtx || !buffer) {
+          console.log('Canvas not ready, storing INIT message for later, ID:', msg.id);
+          pendingInitMessage = msg;
+        } else {
+          console.log('🎮 Processing INIT message immediately, ID:', msg.id);
+          initGameState(msg.id);
+          redrawRequest = true;
+        }
+      // Queue other messages if canvas isn't ready
+      } else if (!viewport || !viewportCtx || !buffer) {
+        console.log('Canvas not ready, queuing message:', msg.type);
+        pendingMessages.push(msg);
       } else {
-        console.log('🎮 Processing INIT message immediately, ID:', msg.id);
-        initGameState(msg.id);
-        redrawRequest = true;
+        // Process immediately if canvas is ready
+        processGameMessage(msg);
       }
-    // Queue other messages if canvas isn't ready
-    } else if (!viewport || !viewportCtx || !buffer) {
-      console.log('Canvas not ready, queuing message:', msg.type);
-      pendingMessages.push(msg);
-    } else if (msg.type == MSG_JOIN) {
-      if (initialized) {
-        displayAlert('Player' + msg.id + ' has joined the game!');
-      }
-    } else {
-      // Process immediately if canvas is ready
-      processGameMessage(msg);
     }
   }
 
@@ -281,15 +277,41 @@ function processEvents() {
     initGameState(pendingInitMessage.id);
     pendingInitMessage = null;
     
-    // Now process all the queued messages
+    // Set flag to prevent processing new incoming messages during queue processing
+    processingQueuedMessages = true;
+    
     console.log('Processing', pendingMessages.length, 'queued messages');
+    
+    // Temporarily disable redraw requests
+    let batchRedrawNeeded = false;
+    const originalRedrawRequest = redrawRequest;
+    
     while (pendingMessages.length > 0) {
       const queuedMsg = pendingMessages.shift();
+      
+      // Clear redraw flag before processing
+      redrawRequest = false;
+      
       processGameMessage(queuedMsg);
+      
+      // Check if this message needed a redraw
+      if (redrawRequest) {
+        batchRedrawNeeded = true;
+      }
     }
-  
-    redrawRequest = true;
+    
+    // Clear the flag
+    processingQueuedMessages = false;
+    pendingMessages = []; // Clear any remaining messages
+    
+    // Restore original redraw state and trigger single redraw if needed
+    redrawRequest = originalRedrawRequest || batchRedrawNeeded;
+    
+    if (batchRedrawNeeded) {
+      console.log('Batch processing complete, triggering single redraw');
+    }
   }
+  
 
   // Don't process game logic until canvas is initialized
   if (!viewport || !viewportCtx || !buffer) {
@@ -352,6 +374,66 @@ function processEvents() {
   }
 }
 
+function processHistoricalFireImpact(firingPlayer) {
+  // Simulate a bullet fired from the player's position in their direction
+  // This is a simplified version that assumes the bullet hits terrain quickly
+  
+  let bulletX = firingPlayer.x;
+  let bulletY = firingPlayer.y;
+  const bulletDir = firingPlayer.dir;
+  
+  // Calculate bullet starting position based on tank direction
+  if ([1, 4, 7].includes(bulletDir)) {
+    bulletX = firingPlayer.x - 2;
+  }
+  if ([8, 2].includes(bulletDir)) {
+    bulletX = firingPlayer.x + Math.floor(TANK_WIDTH / 2);
+  }
+  if ([3, 6, 9].includes(bulletDir)) {
+    bulletX = firingPlayer.x + TANK_WIDTH;
+  }
+  if ([7, 8, 9].includes(bulletDir)) {
+    bulletY = firingPlayer.y - 2;
+  }
+  if ([4, 6].includes(bulletDir)) {
+    bulletY = firingPlayer.y + Math.floor(TANK_HEIGHT / 2);
+  }
+  if ([1, 2, 3].includes(bulletDir)) {
+    bulletY = firingPlayer.y + TANK_HEIGHT;
+  }
+  
+  // Trace bullet path until it hits terrain
+  const maxSteps = 200; // Prevent infinite loops
+  for (let step = 0; step < maxSteps; step++) {
+    // Move bullet forward
+    if ([9, 6, 3].includes(bulletDir)) {
+      bulletX += 2;
+    }
+    if ([1, 2, 3].includes(bulletDir)) {
+      bulletY += 2;
+    }
+    if ([7, 4, 1].includes(bulletDir)) {
+      bulletX -= 2;
+    }
+    if ([9, 8, 7].includes(bulletDir)) {
+      bulletY -= 2;
+    }
+    
+    // Check if bullet is out of bounds
+    if (bulletX < 0 || bulletY < 0 || bulletX > MAP_WIDTH || bulletY > MAP_HEIGHT) {
+      break;
+    }
+    
+    // Check if bullet hit terrain (dig a small area and see if anything was dug)
+    const dugPixels = digRect(Math.floor(bulletX), Math.floor(bulletY), 2, 2);
+    if (dugPixels > 0) {
+      // Bullet hit terrain, create crater
+      digCrater(Math.floor(bulletX), Math.floor(bulletY), 3, 3);
+      break;
+    }
+  }
+}
+
 function processGameMessage(msg) {
   if (msg.type == MSG_JOIN) {
     if (initialized) {
@@ -376,18 +458,28 @@ function processGameMessage(msg) {
       redrawRequest = true;
     }
   } else if (msg.type == MSG_FIRE) {
-    if (initialized) {
-      // Check if the firing player exists before calling fire
-      const firingPlayer = (msg.id == player.id) ? player : opponents.get(msg.id);
-      if (firingPlayer) {
-        fire(msg.id);
-      } else {
-        console.log('Fire message from unknown player:', msg.id);
-      }
+  if (processingQueuedMessages) {
+    // For historical fire messages, apply the impact effects without creating bullets
+    console.log('Processing historical FIRE impact for player', msg.id);
+    
+    const firingPlayer = (msg.id == player.id) ? player : opponents.get(msg.id);
+    if (firingPlayer) {
+      processHistoricalFireImpact(firingPlayer);
     }
-    if (onScreen && onScreen(msg.id)) {
-      playSound(sndFire2);
-      redrawRequest = true;
+      } else {
+      // Process normal real-time fire messages
+      if (initialized) {
+        const firingPlayer = (msg.id == player.id) ? player : opponents.get(msg.id);
+        if (firingPlayer) {
+          fire(msg.id);
+          if (onScreen && onScreen(msg.id)) {
+            playSound(sndFire2);
+            redrawRequest = true;
+          }
+        } else {
+          console.log('Fire message from unknown player:', msg.id);
+        }
+      }
     }
   } else if (msg.type == MSG_LOST) {
     tankDestroyed(msg.player.id, msg.player.by);
