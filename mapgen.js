@@ -483,9 +483,6 @@ class BaseManager {
 // Global base manager instance
 const baseManager = new BaseManager();
 
-// Integration functions for the main game
-
-// Replace the loadAssets function to generate random maps
 function generateRandomMaps(seed) {
   // If no seed provided, generate one based on a deterministic source
   // This ensures all players get the same map if they connect around the same time
@@ -563,8 +560,8 @@ function generateRandomMaps(seed) {
 // Enhanced base placement function
 function generateOptimalBaseLocation(id) {
   if (!window.gameTerrainData) {
-    console.warn('No terrain data available, falling back to random placement');
-    return randomBaseLocation(id);
+    console.warn('No terrain data available, falling back to random placement', id);
+    return null; // Return null instead of calling randomBaseLocation
   }
   
   const location = baseManager.findOptimalBaseLocation(
@@ -573,7 +570,7 @@ function generateOptimalBaseLocation(id) {
   
   if (!location) {
     console.warn('Could not find optimal base location, using fallback');
-    return randomBaseLocation(id);
+    return null; // Return null instead of calling randomBaseLocation
   }
   
   return location;

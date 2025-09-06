@@ -44,28 +44,24 @@ function loadImage(filename) {
 
 // Load map, images and sounds
 function loadAssets() {
-  // Account for the 3 generated maps in the ready counter
-  ready += 3;
-  
-  // Generate random maps using server seed if available
+  // Use shared seed if available, otherwise use time-based seed
   const mapSeed = window.sharedMapSeed || Math.floor(Date.now() / 60000);
-  generateRandomMaps(mapSeed);
     
-  // Load bullet images
+  // Load bullet images (keep existing)
   for (let i = 1; i <= 9; i++) {
     if (i % 10 != 5) {
       bulletImages.set(i, loadImage(IMAGES_URL_PREFIX + 'b' + i + '.png'));
     }
   }
   
-  // Load tank images
+  // Load tank images (keep existing)
   for (let i = 1; i <= 49; i++) {
     if (i % 10 != 0 && i % 10 != 5) {
       tankImages.set(i, loadImage(IMAGES_URL_PREFIX + 't' + i.toString().padStart(2, '0') + '.png'));
     }
   }
 
-  // Detect support for OGG Vorbis sound. Fallback on WAV.
+  // Load sounds (keep existing)
   let ext = '.wav';
   if (new Audio().canPlayType('audio/ogg; codecs="vorbis"') != "") {  
     ext = '.ogg';

@@ -11,9 +11,10 @@
  * up-to-date on the gameplay thus far.
  */
 
+// ===== EXACT CHANGES TO YOUR EXISTING index.js =====
+
 const webSocketServer = require('websocket').server;
 const http = require('http');
-
 const finalhandler = require('finalhandler');
 const serveStatic = require('serve-static');
 
@@ -29,8 +30,31 @@ let counter = 0;
 // Trace of all messages, that is replayed for new players
 const trace = [];
 
+// Try to load MapManager
+let mapManager = null;
+let sharedMapData = null;
+
+try {
+  const { MapManager } = require('./MapManager');
+  mapManager = new MapManager();
+  console.log('✅ MapManager loaded successfully');
+} catch (error) {
+  console.log('⚠️ MapManager not found, using seed-only mode');
+}
+
 // Generate seed when server starts
-let currentMapSeed = Math.floor(Date.now() / 1000); 
+let currentMapSeed = Math.floor(Date.now() / 1000);
+
+// Generate map if MapManager available
+if (mapManager) {
+  try {
+    sharedMapData = mapManager.generateMapForGame(currentMapSeed);
+    console.log('✅ Generated shared map with seed:', currentMapSeed);
+  } catch (error) {
+    console.error('❌ Error generating map:', error);
+    sharedMapData = null;
+  }
+}
 
 const MSG_MAP_SEED = 'S';
 
@@ -59,8 +83,31 @@ wss.on('request', function(request) {
   // Send the trace of all previous actions to the player
   trace.forEach(action => ws.sendUTF(action));
 
-  // Send MAP_SEED message first so client can generate the correct map
-  ws.sendUTF('S ' + currentMapSeed);
+  // Send map data OR seed
+  if (sharedMapData) {
+    try {
+      const mapPayload = {
+        bgLayer: Array.from(sharedMapData.bgLayer),
+        shapesLayer: Array.from(sharedMapData.shapesLayer),
+        mapLayer: Array.from(sharedMapData.mapLayer),
+        width: sharedMapData.width,
+        height: sharedMapData.height,
+        seed: sharedMapData.seed
+      };
+      
+      const mapMessage = 'M ' + JSON.stringify(mapPayload);
+      console.log('📤 Sending map data to player', id, '(', Math.round(mapMessage.length/1024), 'KB )');
+      ws.sendUTF(mapMessage);
+    } catch (error) {
+      console.error('❌ Error sending map data to player', id, ':', error);
+      console.log('📤 Fallback: Sending seed to player', id);
+      ws.sendUTF('S ' + currentMapSeed);
+    }
+  } else {
+    // Original behavior
+    console.log('📤 Sending map seed to player', id, '- seed:', currentMapSeed);
+    ws.sendUTF('S ' + currentMapSeed);
+  }
 
   // Send INIT message with the new ID, so player will join the game
   ws.sendUTF('I ' + id);
@@ -85,6 +132,18 @@ wss.on('request', function(request) {
       console.log('Reset game state');
       trace.length = 0;
       counter = 0;
+      
+      // Generate new map for next game
+      currentMapSeed = Math.floor(Date.now() / 1000);
+      if (mapManager) {
+        try {
+          sharedMapData = mapManager.generateMapForGame(currentMapSeed);
+          console.log('✅ Generated new map for next game with seed:', currentMapSeed);
+        } catch (error) {
+          console.error('❌ Error generating new map:', error);
+          sharedMapData = null;
+        }
+      }
     } else {
       // Send an EXIT message to the other players
       multicast(ws, 'X ' + id);
@@ -101,15 +160,3 @@ function multicast(source, message) {
     }
   });
 }
-
-function generateNewMapSeed() {
-  currentMapSeed = Math.floor(Date.now() / 1000);
-  console.log('New map seed generated:', currentMapSeed);
-  
-  // Broadcast new seed to all clients
-  multicast(null, 'S ' + currentMapSeed);
-  
-  // Clear trace since old actions won't work with new map
-  trace.length = 0;
-}
-

@@ -46,11 +46,22 @@ function redrawScreen() {
 function drawTank(t) {
   if (collides(area(t), lens)) {
     // 10 * player number (1-4) + direction
-    viewportCtx.drawImage(tankImages.get((10 * (t.id % 4 == 0 ? 4 : t.id % 4)) + t.dir), t.x - lens.x, t.y - lens.y);
-    // Draw opponent's name under the tank
-    if (t.id != player.id) {
-      viewportCtx.fillStyle = 'white';
-      viewportCtx.fillText(t.name, t.x - lens.x + (TANK_WIDTH / 2), t.y - lens.y + TANK_HEIGHT + 1);
+    const tankImageKey = (10 * (t.id % 4 == 0 ? 4 : t.id % 4)) + t.dir;
+    const tankImage = tankImages.get(tankImageKey);
+    
+    // Safety check - only draw if image exists and is loaded
+    if (tankImage && tankImage.complete && tankImage.naturalWidth > 0) {
+      viewportCtx.drawImage(tankImage, t.x - lens.x, t.y - lens.y);
+      
+      // Draw opponent's name under the tank
+      if (t.id != player.id) {
+        viewportCtx.fillStyle = 'white';
+        viewportCtx.fillText(t.name, t.x - lens.x + (TANK_WIDTH / 2), t.y - lens.y + TANK_HEIGHT + 1);
+      }
+    } else {
+      // Draw a placeholder rectangle if image isn't ready
+      viewportCtx.fillStyle = 'green';
+      viewportCtx.fillRect(t.x - lens.x, t.y - lens.y, TANK_WIDTH, TANK_HEIGHT);
     }
   }
 }

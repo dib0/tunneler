@@ -28,6 +28,7 @@ const MSG_TEXT = 'T';
 const MSG_NAME = 'N';
 const MSG_EXIT = 'X';
 const MSG_MAP_SEED = 'S';
+const MSG_MAP_DATA = 'M';
 
 // Connection to the server
 let socket;
@@ -44,10 +45,17 @@ function connect() {
   console.log(`Connecting to: ${SERVER_URL}`); // Debug log to show which protocol is being used
   
   socket = new WebSocket(SERVER_URL);
+  
+  // Set flag to wait for server map
+  if (typeof window !== 'undefined') {
+    window.expectingServerMap = true;
+  }
 
   // Listen for messages
   socket.addEventListener('message', function (event) {
+    console.log('📥 Message received from server:', event.data.substring(0, 30) + '...');
     inbox.push(event.data);
+    console.log('📮 Inbox now has', inbox.length, 'messages');
   });
 
   socket.addEventListener('open', function (event) {
@@ -71,17 +79,34 @@ function connect() {
 }
 
 function messageReceived() {
-  return (inbox.length > 0);
+  const hasMessage = inbox.length > 0;
+  if (hasMessage) {
+    console.log('📬 messageReceived() returning true, inbox length:', inbox.length);
+  }
+  return hasMessage;
 }
 
 function getMessage() {
+  console.log('📨 getMessage() called, inbox length:', inbox.length);
   if (inbox.length > 0) {
     const s = inbox.shift();
-    // console.log("< " + s);
+    console.log("Raw message:", s.charAt(0), s.substring(0, 20)); // DEBUG
     const arr = s.split(" ");
     const action = arr[0];
+    
     if (action == MSG_MAP_SEED) {
       return {type: MSG_MAP_SEED, seed: parseInt(arr[1])};
+    } else if (action == 'M' && s.substring(2, 3) == '{') {
+      // Handle map data messages (JSON format)
+      const mapDataJson = s.substring(2); // Everything after "M "
+      try {
+        const mapData = JSON.parse(mapDataJson);
+        console.log('Received map data from server - Size:', mapData.width, 'x', mapData.height);
+        return {type: 'MAP_DATA', mapData: mapData};
+      } catch (e) {
+        console.error('Error parsing map data:', e);
+        return null;
+      }
     } else if (action == MSG_INIT) {
       return {type: MSG_INIT, id: arr[1]};
     } else if (action == MSG_JOIN) {
@@ -89,7 +114,7 @@ function getMessage() {
     } else if (action == MSG_MOVE) {
       return {type: MSG_MOVE, player: {id: arr[1], x: parseInt(arr[2]), y: parseInt(arr[3]), dir: parseInt(arr[4]), energy: parseInt(arr[5]), health: parseInt(arr[6]), score: parseInt(arr[7]), name: atob(arr[8])}};
     } else if (action == MSG_BASE) {
-      return {type: MSG_BASE, base: {id: arr[1], x: parseInt(arr[2]), y: parseInt(arr[3]), w: parseInt(arr[3]), h: parseInt(arr[4])}};
+      return {type: MSG_BASE, base: {id: arr[1], x: parseInt(arr[2]), y: parseInt(arr[3]), w: parseInt(arr[4]), h: parseInt(arr[5])}};
     } else if (action == MSG_DIG) {
       return {type: MSG_DIG, area: {x: parseInt(arr[1]), y: parseInt(arr[2]), w: parseInt(arr[3]), h: parseInt(arr[4])}};
     } else if (action == MSG_FIRE) {

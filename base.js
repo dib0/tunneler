@@ -17,13 +17,18 @@ const bases = [];
 // Generate a random location for a new base (with logic to place
 // bases not too close to each other)
 function randomBaseLocation(id) {
-  // Use the optimal placement if available
-  if (typeof generateOptimalBaseLocation !== 'undefined') {
-    return generateOptimalBaseLocation(id);
+  // Use the optimal placement if available AND terrain data exists
+  if (typeof generateOptimalBaseLocation !== 'undefined' && window.gameTerrainData) {
+    const optimalLocation = generateOptimalBaseLocation(id);
+    if (optimalLocation) {
+      return optimalLocation;
+    }
+    // If optimal placement fails, fall through to random method
   }
   
-  // Fallback to old method if map generator not available
+  // Fallback to old method
   let rect;
+  let attempts = 0;
   do {
     rect = {
       id: id,
@@ -32,7 +37,8 @@ function randomBaseLocation(id) {
       w: BASE_WIDTH,
       h: BASE_HEIGHT
     };
-  } while (collision(rect));
+    attempts++;
+  } while (collision(rect) && attempts < 100); // Add max attempts to prevent infinite loop
 
   return rect;
 }
