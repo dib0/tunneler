@@ -33,6 +33,234 @@ const TARGET_CANVAS_ID = 'tun_viewport_canvas';
 
 const EVENT_LOOP_INTERVAL = 100;
 
+// ============================================================================
+// LOADING SCREEN OVERLAY
+// ============================================================================
+
+class TunnelerLoadingOverlay {
+    constructor() {
+        this.overlay = null;
+        this.progressBar = null;
+        this.statusText = null;
+        this.percentText = null;
+        this.isVisible = false;
+        this.currentStage = 0;
+        this.stages = [
+            'Connecting to server...',
+            'Loading game assets...',
+            'Receiving map data...',
+            'Processing terrain...',
+            'Initializing canvas...',
+            'Setting up game world...',
+            'Ready to play!'
+        ];
+    }
+
+    show() {
+        if (this.isVisible) return;
+        
+        this.createOverlay();
+        this.isVisible = true;
+        this.updateProgress(0, this.stages[0]);
+    }
+
+    hide() {
+        if (!this.isVisible || !this.overlay) return;
+        
+        this.updateProgress(100, 'Complete!');
+        
+        setTimeout(() => {
+            this.overlay.style.opacity = '0';
+            setTimeout(() => {
+                if (this.overlay && this.overlay.parentNode) {
+                    this.overlay.parentNode.removeChild(this.overlay);
+                }
+                this.overlay = null;
+                this.isVisible = false;
+            }, 500);
+        }, 300);
+    }
+
+    updateProgress(percent, message = null) {
+        if (!this.isVisible) return;
+        
+        percent = Math.max(0, Math.min(100, percent));
+        
+        if (this.progressBar) {
+            this.progressBar.style.width = percent + '%';
+        }
+        
+        if (this.percentText) {
+            this.percentText.textContent = Math.round(percent) + '%';
+        }
+        
+        if (message && this.statusText) {
+            this.statusText.textContent = message;
+        }
+        
+        // Auto-advance through stages based on progress
+        const stageIndex = Math.floor((percent / 100) * (this.stages.length - 1));
+        if (!message && stageIndex !== this.currentStage && stageIndex < this.stages.length) {
+            this.currentStage = stageIndex;
+            if (this.statusText) {
+                this.statusText.textContent = this.stages[stageIndex];
+            }
+        }
+    }
+
+    createOverlay() {
+        // Create overlay
+        this.overlay = document.createElement('div');
+        this.overlay.id = 'tunneler-loading-overlay';
+        this.overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+            transition: opacity 0.5s ease;
+        `;
+
+        // Create container
+        const container = document.createElement('div');
+        container.style.cssText = `
+            text-align: center;
+            max-width: 450px;
+            padding: 40px;
+            background: rgba(26, 26, 26, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            border: 2px solid #4CAF50;
+        `;
+
+        // Title
+        const title = document.createElement('div');
+        title.textContent = 'TUNNELER';
+        title.style.cssText = `
+            font-size: 3em;
+            margin-bottom: 30px;
+            color: #4CAF50;
+            text-shadow: 0 0 20px #4CAF50;
+            font-weight: bold;
+            letter-spacing: 4px;
+        `;
+
+        // Animated spinner
+        const spinner = document.createElement('div');
+        spinner.style.cssText = `
+            width: 60px;
+            height: 60px;
+            border: 5px solid #333;
+            border-top: 5px solid #4CAF50;
+            border-radius: 50%;
+            animation: tunneler-spin 1s linear infinite;
+            margin: 0 auto 25px;
+        `;
+
+        // Progress label
+        const progressLabel = document.createElement('div');
+        progressLabel.textContent = 'Loading Game...';
+        progressLabel.style.cssText = `
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            color: #fff;
+        `;
+
+        // Progress bar container
+        const progressContainer = document.createElement('div');
+        progressContainer.style.cssText = `
+            width: 100%;
+            height: 25px;
+            background: #333;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.4);
+        `;
+
+        // Progress bar
+        this.progressBar = document.createElement('div');
+        this.progressBar.style.cssText = `
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #66BB6A);
+            width: 0%;
+            transition: width 0.4s ease;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+        `;
+
+        // Percentage
+        this.percentText = document.createElement('div');
+        this.percentText.textContent = '0%';
+        this.percentText.style.cssText = `
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: #4CAF50;
+            font-weight: bold;
+        `;
+
+        // Status text
+        this.statusText = document.createElement('div');
+        this.statusText.textContent = 'Initializing...';
+        this.statusText.style.cssText = `
+            font-size: 1em;
+            color: #bbb;
+            margin-bottom: 30px;
+            min-height: 24px;
+        `;
+
+        // Game tip
+        const tip = document.createElement('div');
+        tip.innerHTML = '🎯 <em>Use arrow keys to move • Space to shoot • Enter to chat</em>';
+        tip.style.cssText = `
+            font-size: 0.85em;
+            color: #888;
+            font-style: italic;
+        `;
+
+        // Add spinner animation to document
+        if (!document.getElementById('tunneler-loading-styles')) {
+            const style = document.createElement('style');
+            style.id = 'tunneler-loading-styles';
+            style.textContent = `
+                @keyframes tunneler-spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Assemble
+        progressContainer.appendChild(this.progressBar);
+        container.appendChild(title);
+        container.appendChild(spinner);
+        container.appendChild(progressLabel);
+        container.appendChild(progressContainer);
+        container.appendChild(this.percentText);
+        container.appendChild(this.statusText);
+        container.appendChild(tip);
+        this.overlay.appendChild(container);
+
+        // Add to page
+        document.body.appendChild(this.overlay);
+    }
+}
+
+// Create global loading overlay instance
+const loadingOverlay = new TunnelerLoadingOverlay();
+
+// ============================================================================
+// GAME VARIABLES AND FUNCTIONS
+// ============================================================================
+
 let pendingMessages = [];
 let processingQueuedMessages = false;
 let expectingServerMap = false;
@@ -78,15 +306,21 @@ let redrawRequest = false;
 // and initialize the canvas.
 // initCanvas() will start a timer to run the main event loop: procesEvents()
 function tunneler() {
+  // === SHOW LOADING OVERLAY AT THE VERY START ===
+  loadingOverlay.show();
+  loadingOverlay.updateProgress(5, 'Starting game...');
 
   // Set flag to expect server map data
   expectingServerMap = true;
+  loadingOverlay.updateProgress(10, 'Connecting to server...');
 
   // Load image files
   loadAssets();
+  loadingOverlay.updateProgress(20, 'Loading game assets...');
 
   // Connect to the server
   connect();
+  loadingOverlay.updateProgress(30, 'Establishing connection...');
 
   // START EVENT LOOP IMMEDIATELY - before canvas initialization
   console.log('Starting event loop early to process server messages...');
@@ -102,18 +336,23 @@ function initCanvas() {
 
   // Wait for assets to load
   if (state < ready) {
+    loadingOverlay.updateProgress(25, 'Loading assets...');
     setTimeout(initCanvas, 100);
     return;
   }
 
+  loadingOverlay.updateProgress(35, 'Assets loaded...');
+
   // If we're expecting server map data, wait for it
   if (expectingServerMap && (!bgImage || !shapesImage || !mapImage)) {
     console.log('Waiting for server map data...');
+    loadingOverlay.updateProgress(40, 'Waiting for map data...');
     setTimeout(initCanvas, 100);
     return;
   }
 
   console.log('Assets loaded, initializing canvas...');
+  loadingOverlay.updateProgress(50, 'Initializing canvas...');
 
   // Init canvas and context
   buffer = document.createElement('canvas');
@@ -123,21 +362,27 @@ function initCanvas() {
   bufferCtx = buffer.getContext('2d');
   bufferCtx.imageSmoothingEnabled = false;
 
+  loadingOverlay.updateProgress(60, 'Processing shapes...');
+
   // Check if images are loaded before using them
   if (shapesImage && shapesImage.complete) {
     bufferCtx.drawImage(shapesImage, 0, 0);
     shapesData = bufferCtx.getImageData(0, 0, MAP_WIDTH, MAP_HEIGHT).data;
   } else {
     console.error('shapesImage not ready');
+    loadingOverlay.updateProgress(45, 'Waiting for shapes...');
     setTimeout(initCanvas, 100);
     return;
   }
+
+  loadingOverlay.updateProgress(70, 'Processing background...');
 
   if (bgImage && bgImage.complete) {
     bufferCtx.drawImage(bgImage, 0, 0);
     bgData = bufferCtx.getImageData(0, 0, MAP_WIDTH, MAP_HEIGHT).data;
   } else {
     console.error('bgImage not ready');
+    loadingOverlay.updateProgress(55, 'Waiting for background...');
     setTimeout(initCanvas, 100);
     return;
   }
@@ -145,14 +390,19 @@ function initCanvas() {
   // Initialize digData
   digData = Array(shapesData.length / 4).fill(0);
 
+  loadingOverlay.updateProgress(80, 'Processing map terrain...');
+
   if (mapImage && mapImage.complete) {
     bufferCtx.drawImage(mapImage, 0, 0);
     digTransparentAreas();
   } else {
     console.error('mapImage not ready');
+    loadingOverlay.updateProgress(65, 'Waiting for map...');
     setTimeout(initCanvas, 100);
     return;
   }
+
+  loadingOverlay.updateProgress(85, 'Setting up viewport...');
 
   // Init viewport
   viewport = document.getElementById(TARGET_CANVAS_ID);
@@ -163,6 +413,8 @@ function initCanvas() {
   viewport.tabIndex = 0;
   viewport.onfocus = resetKeys;
   viewport.onblur = resetKeys;
+
+  loadingOverlay.updateProgress(90, 'Initializing game world...');
 
   // Redraw all existing bases on the new canvas
   if (bases.length > 0) {
@@ -176,6 +428,8 @@ function initCanvas() {
   }  
 
   setupEventListeners();
+  
+  loadingOverlay.updateProgress(95, 'Finalizing...');
 }
 
 // When the browser window is resized, recalculate the zoom scale, lens size and lens location, and redraw the screen.
@@ -196,11 +450,13 @@ function resizeViewport() {
   }
 }
 
- function initGameState(id) {
+function initGameState(id) {
   // Reset base manager for new game
   if (typeof resetBaseManager !== 'undefined') {
     resetBaseManager();
   }
+  
+  loadingOverlay.updateProgress(98, 'Generating spawn point...');
   
   // Generate base
   let base = randomBaseLocation(id);
@@ -221,6 +477,12 @@ function resizeViewport() {
   displayWelcomeMessage();
   alive = true;
   initialized = true;
+
+  // === HIDE LOADING OVERLAY WHEN GAME IS READY ===
+  loadingOverlay.updateProgress(100, 'Game ready!');
+  setTimeout(() => {
+    loadingOverlay.hide();
+  }, 800);
 }
 
 function processEvents() {
@@ -612,11 +874,14 @@ function quitGame() {
 
 function initializeBufferWithServerMap(mapData) {
   console.log('Replacing fallback map with server map data');
+  loadingOverlay.updateProgress(45, 'Receiving server map...');
   
   try {
     // IMMEDIATELY set terrain data - this is critical for base placement
     window.gameTerrainData = mapData.terrain;
     console.log('Terrain data set for base placement');
+
+    loadingOverlay.updateProgress(50, 'Processing map layers...');
 
     // Convert server data
     const bgImageData = new Uint8ClampedArray(mapData.bgLayer);
@@ -645,6 +910,8 @@ function initializeBufferWithServerMap(mapData) {
     const mapData_img = new ImageData(mapImageData, mapData.width, mapData.height);
     mapCtx.putImageData(mapData_img, 0, 0);
     
+    loadingOverlay.updateProgress(55, 'Creating map images...');
+    
     // Create the global image objects
     bgImage = new Image();
     shapesImage = new Image();
@@ -654,8 +921,11 @@ function initializeBufferWithServerMap(mapData) {
     let imagesLoaded = 0;
     const onImageLoad = () => {
       imagesLoaded++;
+      loadingOverlay.updateProgress(55 + (imagesLoaded * 5), `Loading image ${imagesLoaded}/3...`);
+      
       if (imagesLoaded === 3) {
         console.log('Server map images loaded, triggering canvas initialization');
+        loadingOverlay.updateProgress(70, 'Map images ready...');
         // Force canvas initialization now that images are ready
         setTimeout(() => {
           if (!buffer) {
@@ -683,5 +953,6 @@ function initializeBufferWithServerMap(mapData) {
     
   } catch (error) {
     console.error('Error applying server map:', error);
+    loadingOverlay.updateProgress(0, 'Error loading map!');
   }
 }
