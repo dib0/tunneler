@@ -2,6 +2,13 @@ body {
   background: linear-gradient(90deg, #161122 4px, transparent 1%) center, linear-gradient(#161122 4px, transparent 1%) center, #a799cc;
   background-size: 5px 5px;
   overflow: hidden;
+  touch-action: none;
+  -ms-touch-action: none;
+}
+
+#tun_viewport_canvas {
+  touch-action: none;
+  -ms-touch-action: none;
 }
 
 .tun-client-view, .tun-e-bar, .tun-s-bar {

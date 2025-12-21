@@ -11,8 +11,6 @@
  * up-to-date on the gameplay thus far.
  */
 
-// ===== EXACT CHANGES TO YOUR EXISTING index.js =====
-
 const webSocketServer = require('websocket').server;
 const http = require('http');
 const finalhandler = require('finalhandler');
