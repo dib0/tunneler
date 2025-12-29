@@ -273,7 +273,7 @@ let eventLoopInterval;
 const lens = {x: 0, y: 0, w: 0, h: 0};
 
 // Coordinates and direction of the local player
-let player = {id: 0, x: 0, y: 0, dir: 0, energy: 0, health: 0, score: 0, name: ""};
+let player = {id: 0, x: 0, y: 0, dir: 0, energy: 0, health: 0, score: 0, name: "", lives: 0};
 
 // Wait varies between 0 and WAIT_FRAMES_ON_RESTART.
 let wait = 0;
@@ -510,7 +510,17 @@ function initGameState(id) {
   // Generate player
   TANK_INIT_X = Math.ceil(base.x + (base.w / 2) - (TANK_WIDTH / 2));
   TANK_INIT_Y = Math.ceil(base.y + (base.h / 2) - (TANK_HEIGHT / 2) - 10);
-  player = {id: id, x: TANK_INIT_X, y: TANK_INIT_Y, dir: TANK_INIT_DIR, energy: TANK_MAX_ENERGY, health: TANK_MAX_HEALTH, score: TANK_INIT_SCORE, name: 'Player' + id};
+  player = {
+    id: id, 
+    x: TANK_INIT_X, 
+    y: TANK_INIT_Y, 
+    dir: TANK_INIT_DIR, 
+    energy: TANK_MAX_ENERGY, 
+    health: TANK_MAX_HEALTH, 
+    score: TANK_INIT_SCORE, 
+    name: 'Player' + id,
+    lives: GameConfig.tank.maxLives
+  };
   centerLensOnPlayer();
 
   // Broadcast location
@@ -523,10 +533,15 @@ function initGameState(id) {
   alive = true;
   initialized = true;
 
+  // Initialize lives display
+  updateLivesDisplay();
+
   // Activate spawn protection for new player
   if (typeof activateSpawnProtection !== 'undefined') {
     activateSpawnProtection();
-    displayAlert('🛡️ Spawn protection active for 5 seconds');
+    if (GameConfig.spawnProtection.showNotifications) {
+      displayAlert('🛡️ Spawn protection active for 5 seconds');
+    }
   }
 
   // === HIDE LOADING OVERLAY WHEN GAME IS READY ===
@@ -910,17 +925,43 @@ function tankDestroyed(id, by) {
   }
 }
 
-// Move player back to starting position with full energy and health, but keep id and score.
+// Move player back to starting position with full energy and health, but keep id, score, and lives.
 function restart() {
-  player = {id: player.id, x: TANK_INIT_X, y: TANK_INIT_Y, dir: TANK_INIT_DIR, energy: TANK_MAX_ENERGY, health: TANK_MAX_HEALTH, score: player.score, name: player.name};
+  // Deduct a life if lives system is enabled
+  if (GameConfig.tank.maxLives > 0 && player.lives > 0) {
+    player.lives--;
+  }
+  
+  // Check if player has any lives left
+  if (GameConfig.tank.maxLives > 0 && player.lives <= 0) {
+    gameOver();
+    return;
+  }
+  
+  player = {
+    id: player.id, 
+    x: TANK_INIT_X, 
+    y: TANK_INIT_Y, 
+    dir: TANK_INIT_DIR, 
+    energy: TANK_MAX_ENERGY, 
+    health: TANK_MAX_HEALTH, 
+    score: player.score, 
+    name: player.name,
+    lives: player.lives
+  };
   centerLensOnPlayer();
   sendMessage(MSG_MOVE, player);
   alive = true;
   
+  // Update lives display
+  updateLivesDisplay();
+  
   // Activate spawn protection
   if (typeof activateSpawnProtection !== 'undefined') {
     activateSpawnProtection();
-    displayAlert('🛡️ Spawn protection active for 5 seconds');
+    if (GameConfig.spawnProtection.showNotifications) {
+      displayAlert('🛡️ Spawn protection active for 5 seconds');
+    }
   }
   
   redrawScreen();
@@ -938,6 +979,66 @@ function quitGame() {
   document.onkeydown = () => window.location.reload();
   document.onmousedown = () => window.location.reload();
   document.ontouchdown = () => window.location.reload();
+}
+
+// Handle game over when player runs out of lives
+function gameOver() {
+  alive = false;
+  clearInterval(eventLoopInterval);
+  
+  // Show game over message
+  displayAlert('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  displayAlert('💀 GAME OVER 💀');
+  displayAlert('You ran out of lives!');
+  displayAlert('Final Score: ' + player.score);
+  displayAlert('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  displayAlert('Press any key to restart...');
+  
+  // Show full map
+  viewportCtx.scale(lens.w / MAP_WIDTH, lens.h / MAP_HEIGHT);
+  lens.x = 0;
+  lens.y = 0;
+  redrawScreen();
+  
+  // Setup restart on any key
+  document.onkeyup = null;
+  document.onkeydown = () => window.location.reload();
+  document.onmousedown = () => window.location.reload();
+  document.ontouchdown = () => window.location.reload();
+}
+
+// Update the lives display in the UI
+function updateLivesDisplay() {
+  const livesDisplay = document.getElementById('tun_lives_display');
+  if (!livesDisplay) return;
+  
+  if (!GameConfig.tank.showLivesCounter || GameConfig.tank.maxLives === 0) {
+    livesDisplay.style.display = 'none';
+    return;
+  }
+  
+  livesDisplay.style.display = 'block';
+  
+  const maxLives = GameConfig.tank.maxLives;
+  const currentLives = player.lives;
+  
+  // Build hearts display
+  let heartsHtml = '';
+  
+  // Filled hearts for remaining lives
+  for (let i = 0; i < currentLives; i++) {
+    heartsHtml += '♥ ';
+  }
+  
+  // Empty hearts for lost lives
+  for (let i = currentLives; i < maxLives; i++) {
+    heartsHtml += '♡ ';
+  }
+  
+  // Add text counter
+  heartsHtml += ` Lives: ${currentLives}/${maxLives}`;
+  
+  livesDisplay.innerHTML = heartsHtml;
 }
 
 function initializeBufferWithServerMap(mapData) {

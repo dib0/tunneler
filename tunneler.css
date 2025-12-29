@@ -40,7 +40,7 @@ body {
   position: relative;
 }
 
-.tun-s-symbol, .tun-e-symbol, .tun-chat-symbol, .tun-e-bar, .tun-s-bar, .tun-chat-input, .tun-chat-send {
+.tun-s-symbol, .tun-e-symbol, .tun-chat-symbol, .tun-lives-symbol, .tun-e-bar, .tun-s-bar, .tun-lives-bar, .tun-chat-input, .tun-chat-send {
   position: absolute;
 }
 
@@ -59,8 +59,18 @@ body {
   left: 0px;
 }
 
-.tun-chat-symbol {
+.tun-lives-symbol {
   top:  110px;
+  left: 0px;
+  margin: 10px;
+  font-size: 20px;
+  color: #ff0000;
+  text-shadow: 1px 1px 2px #000000;
+  font-weight: bold;
+}
+
+.tun-chat-symbol {
+  top:  160px;
   left: 0px;
 }
 
@@ -74,8 +84,19 @@ body {
   left: 30px;
 }
 
+.tun-lives-bar {
+  top: 100px;
+  left: 30px;
+  color: #ff0000;
+  font-family: "Lucida Console", sans-serif;
+  font-weight: bold;
+  font-size: 14px;
+  text-shadow: 1px 1px 2px #000000;
+  white-space: nowrap;
+}
+
 .tun-chat-input {
-  top: 110px;
+  top: 160px;
   left: 40px;
   color: #ffffff;
   background: #333333;
@@ -86,7 +107,7 @@ body {
 }
 
 .tun-chat-send {
-  top:  110px;
+  top:  160px;
   left: 240px;
   color: #ffffff;
   width: 60px;
@@ -107,12 +128,12 @@ body {
 
 @media screen and (max-width: 600px) {
   .tun-container {
-    height: 200px;
+    height: 250px;
   }
 
   .tun-chat {
     position: absolute;
-    top: 160px;
+    top: 210px;
     left: 10px;
     width: 270px;
     height: 30px;
@@ -121,7 +142,7 @@ body {
 
 @media screen and (min-width: 601px) {
   .tun-container {
-    height: 140px;
+    height: 190px;
   }
 
   .tun-chat {
@@ -129,6 +150,6 @@ body {
     width: -webkit-calc(100% - 320px);
     width:    -moz-calc(100% - 320px);
     width:         calc(100% - 320px);      
-    height: 120px;
+    height: 170px;
   }
 }

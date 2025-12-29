@@ -112,7 +112,7 @@ function getMessage() {
     } else if (action == MSG_JOIN) {
       return {type: MSG_JOIN, id: arr[1]};
     } else if (action == MSG_MOVE) {
-      return {type: MSG_MOVE, player: {id: arr[1], x: parseInt(arr[2]), y: parseInt(arr[3]), dir: parseInt(arr[4]), energy: parseInt(arr[5]), health: parseInt(arr[6]), score: parseInt(arr[7]), name: atob(arr[8])}};
+      return {type: MSG_MOVE, player: {id: arr[1], x: parseInt(arr[2]), y: parseInt(arr[3]), dir: parseInt(arr[4]), energy: parseInt(arr[5]), health: parseInt(arr[6]), score: parseInt(arr[7]), name: atob(arr[8]), lives: parseInt(arr[9] || 0)}};
     } else if (action == MSG_BASE) {
       return {type: MSG_BASE, base: {id: arr[1], x: parseInt(arr[2]), y: parseInt(arr[3]), w: parseInt(arr[4]), h: parseInt(arr[5])}};
     } else if (action == MSG_DIG) {
@@ -137,7 +137,7 @@ function sendMessage(action, data) {
   if (action == MSG_JOIN) {
     msg = MSG_JOIN + " " + data;
   } else if (action == MSG_MOVE) {
-    msg = MSG_MOVE + " " + data.id + " " + data.x + " " + data.y + " " + data.dir + " " + data.energy + " " + data.health + " " + data.score + " " + btoa(data.name);
+    msg = MSG_MOVE + " " + data.id + " " + data.x + " " + data.y + " " + data.dir + " " + data.energy + " " + data.health + " " + data.score + " " + btoa(data.name) + " " + (data.lives || 0);
   } else if (action == MSG_BASE) {
     msg = MSG_BASE + " " + data.id + " " + data.x + " " + data.y + " " + data.w + " " + data.h;
   } else if (action == MSG_DIG) {

@@ -33,7 +33,7 @@ var GameConfig = {
   
   // === SANCTUARY ZONES ===
   sanctuaryZones: {
-    enabled: false,           // Enable/disable sanctuary zones
+    enabled: true,           // Enable/disable sanctuary zones
     showVisuals: true,       // Show dashed circles and indicators
     radius: 60,              // Distance from base entrance in pixels
     allowEnemyRefuel: true   // Allow enemies to refuel energy in your base
@@ -42,7 +42,7 @@ var GameConfig = {
   // === ANTI-CAMPING SYSTEM ===
   antiCamping: {
     enabled: true,           // Enable/disable camping detection
-    detectionRadius: 60,     // Detection distance from enemy base in pixels
+    detectionRadius: 80,     // Detection distance from enemy base in pixels
     warningTime: 50,         // Frames before warning (50 = 5 seconds)
     penaltyTime: 100,        // Frames before damage starts (100 = 10 seconds)
     damagePerFrame: 0.5,     // Health damage per frame while camping
@@ -57,6 +57,10 @@ var GameConfig = {
     maxHealth: 10,
     startingScore: 0,
     energyDepletionRate: 1,  // Energy lost per movement
+    
+    // Lives system
+    maxLives: 3,             // Maximum lives per player (0 = infinite)
+    showLivesCounter: true,  // Display lives in UI
     
     // Respawn settings
     respawnDelay: 30,        // Frames to wait before respawn (30 = 3 seconds)
@@ -116,7 +120,8 @@ var GamePresets = {
   hardcore: {
     spawnProtection: { enabled: false, duration: 0, showShield: false },
     sanctuaryZones: { enabled: false, showVisuals: false, radius: 40 },
-    antiCamping: { enabled: true, detectionRadius: 60, penaltyTime: 50, damagePerFrame: 1.0 }
+    antiCamping: { enabled: true, detectionRadius: 60, penaltyTime: 50, damagePerFrame: 1.0 },
+    tank: { maxLives: 1 }  // One life only!
   },
   
   // Beginner friendly with extra protection
@@ -124,7 +129,7 @@ var GamePresets = {
     spawnProtection: { enabled: true, duration: 100, showShield: true },
     sanctuaryZones: { enabled: true, showVisuals: true, radius: 100 },
     antiCamping: { enabled: true, detectionRadius: 120, penaltyTime: 150, damagePerFrame: 0.3 },
-    tank: { respawnDelay: 20 }
+    tank: { respawnDelay: 20, maxLives: 5 }  // More lives for beginners
   },
   
   // Tournament/competitive settings
@@ -140,7 +145,7 @@ var GamePresets = {
     spawnProtection: { enabled: true, duration: 30, showShield: true },
     sanctuaryZones: { enabled: false, showVisuals: false, radius: 40 },
     antiCamping: { enabled: true, detectionRadius: 60, penaltyTime: 50, damagePerFrame: 1.0 },
-    tank: { respawnDelay: 10, maxHealth: 5 },
+    tank: { respawnDelay: 10, maxHealth: 5, maxLives: 10 },  // Many lives, fast respawn
     weapons: { reloadTime: 1, maxBullets: 20 }
   }
 };
@@ -241,6 +246,10 @@ function validateConfig() {
   
   if (GameConfig.tank.maxEnergy < 100 || GameConfig.tank.maxEnergy > 10000) {
     errors.push('Tank max energy must be between 100 and 10000');
+  }
+  
+  if (GameConfig.tank.maxLives < 0 || GameConfig.tank.maxLives > 100) {
+    errors.push('Tank max lives must be between 0 (infinite) and 100');
   }
   
   if (errors.length > 0) {
