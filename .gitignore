@@ -1,1 +1,32 @@
-node_modules
+# Custom HTML configurations (keep your tracking codes private)
+config/custom-head.html
+config/custom-body-start.html
+config/custom-body-end.html
+
+# Keep the examples
+!config/custom-*.html.example
+
+# Logs
+logs/
+*.log
+
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+.env.local
+
+# Docker volumes
+docker-volumes/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

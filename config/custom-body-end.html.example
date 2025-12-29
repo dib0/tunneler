@@ -1,0 +1,79 @@
+<!-- custom-body-end.html - Example custom BODY END content -->
+<!-- This file is injected right before </body> tag -->
+
+<!-- Hotjar Tracking Code -->
+<!--
+<script>
+  (function(h,o,t,j,a,r){
+    h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+    h._hjSettings={hjid:YOUR_HOTJAR_ID,hjsv:6};
+    a=o.getElementsByTagName('head')[0];
+    r=o.createElement('script');r.async=1;
+    r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+    a.appendChild(r);
+  })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
+</script>
+-->
+
+<!-- Facebook Pixel Code -->
+<!--
+<script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', 'YOUR_PIXEL_ID');
+  fbq('track', 'PageView');
+</script>
+<noscript>
+  <img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&ev=PageView&noscript=1"/>
+</noscript>
+-->
+
+<!-- LiveChat Widget -->
+<!--
+<script>
+  window.__lc = window.__lc || {};
+  window.__lc.license = YOUR_LICENSE_ID;
+  ;(function(n,t,c){function i(n){return e._h?e._h.apply(null,n):e._q.push(n)}var e={_q:[],_h:null,_v:"2.0",on:function(){i(["on",c.call(arguments)])},once:function(){i(["once",c.call(arguments)])},off:function(){i(["off",c.call(arguments)])},get:function(){if(!e._h)throw new Error("[LiveChatWidget] You can't use getters before load.");return i(["get",c.call(arguments)])},call:function(){i(["call",c.call(arguments)])},init:function(){var n=t.createElement("script");n.async=!0,n.type="text/javascript",n.src="https://cdn.livechatinc.com/tracking.js",t.head.appendChild(n)}};!n.__lc.asyncInit&&e.init(),n.LiveChatWidget=n.LiveChatWidget||e}(window,document,[].slice))
+</script>
+-->
+
+<!-- Custom Event Tracking -->
+<script>
+  // Track game starts
+  window.addEventListener('load', function() {
+    console.log('Game page loaded');
+    // Add your custom tracking here
+    // Example: send event to your analytics platform
+  });
+  
+  // Track game events (you can extend this)
+  window.trackGameEvent = function(eventName, eventData) {
+    console.log('Game event:', eventName, eventData);
+    // Send to your analytics platform
+    if (typeof gtag !== 'undefined') {
+      gtag('event', eventName, eventData);
+    }
+  };
+</script>
+
+<!-- Performance Monitoring -->
+<!--
+<script>
+  // Monitor page performance
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      var perfData = window.performance.timing;
+      var pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
+      console.log('Page load time:', pageLoadTime + 'ms');
+      // Send to your analytics
+    }, 0);
+  });
+</script>
+-->

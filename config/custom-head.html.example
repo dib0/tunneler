@@ -1,0 +1,47 @@
+<!-- custom-head.html - Example custom HEAD content -->
+<!-- This file is injected into the <head> section of index.html -->
+
+<!-- Google Analytics Example -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'GA_MEASUREMENT_ID');
+</script>
+
+<!-- Plausible Analytics Example (Privacy-friendly alternative) -->
+<!-- <script defer data-domain="yourdomain.com" src="https://plausible.io/js/script.js"></script> -->
+
+<!-- Matomo Analytics Example -->
+<!-- 
+<script>
+  var _paq = window._paq = window._paq || [];
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u="//your-matomo-url.com/";
+    _paq.push(['setTrackerUrl', u+'matomo.php']);
+    _paq.push(['setSiteId', '1']);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+-->
+
+<!-- Custom Meta Tags -->
+<meta name="description" content="Tunneler - A multiplayer retro tunneling game">
+<meta name="keywords" content="tunneler, game, multiplayer, retro">
+<meta name="author" content="Your Name">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Tunneler Game">
+<meta property="og:description" content="Play the classic Tunneler game online with friends">
+<meta property="og:image" content="/assets/images/og-image.png">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Tunneler Game">
+<meta name="twitter:description" content="Play the classic Tunneler game online with friends">
+<meta name="twitter:image" content="/assets/images/twitter-image.png">

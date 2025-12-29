@@ -20,8 +20,12 @@ RUN npm config set registry https://registry.npmjs.org/ && \
 # Copy application files
 COPY . .
 
-# Create logs directory (optional)
-RUN mkdir -p logs
+# Create logs and config directories
+RUN mkdir -p logs config
+
+# Copy startup script
+COPY startup.sh /app/startup.sh
+RUN chmod +x /app/startup.sh
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -39,6 +43,9 @@ EXPOSE 3000
 # Health check to ensure container is running properly
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
+
+# Use startup script as entrypoint to process HTML templates
+ENTRYPOINT ["/app/startup.sh"]
 
 # Start the application
 CMD ["node", "index.js"]
