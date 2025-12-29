@@ -302,55 +302,10 @@ const sparks = [];
 // Whether we need to redraw the screen
 let redrawRequest = false;
 
-// Prevent zoom on all platforms
-function preventZoom() {
-  // Prevent Ctrl/Cmd + Plus/Minus/0
-  document.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && 
-        (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
-      e.preventDefault();
-      return false;
-    }
-  }, { passive: false });
-
-  // Prevent Ctrl/Cmd + Mouse Wheel zoom
-  document.addEventListener('wheel', function(e) {
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      return false;
-    }
-  }, { passive: false });
-
-  // Prevent pinch zoom on touch devices
-  document.addEventListener('touchmove', function(e) {
-    if (e.touches.length > 1) {
-      e.preventDefault();
-      return false;
-    }
-  }, { passive: false });
-
-  // Prevent double-tap zoom on mobile
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', function(e) {
-    const now = Date.now();
-    if (now - lastTouchEnd <= 300) {
-      e.preventDefault();
-    }
-    lastTouchEnd = now;
-  }, false);
-
-  // Additional prevention for gesturestart (Safari)
-  document.addEventListener('gesturestart', function(e) {
-    e.preventDefault();
-  }, false);
-}
-
 // Start the game client: Load all image and sound files, connect to the server,
 // and initialize the canvas.
 // initCanvas() will start a timer to run the main event loop: procesEvents()
 function tunneler() {
-  preventZoom();
-  
   // === SHOW LOADING OVERLAY AT THE VERY START ===
   loadingOverlay.show();
   loadingOverlay.updateProgress(5, 'Starting game...');

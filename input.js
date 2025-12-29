@@ -10,6 +10,50 @@
  * sendChatFromInputField
  */
 
+// Prevent all forms of zooming
+function preventZoom() {
+  // Prevent Ctrl/Cmd + wheel zoom
+  document.addEventListener('wheel', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  // Prevent pinch-to-zoom on trackpads and touch devices
+  document.addEventListener('gesturestart', function(e) {
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('gesturechange', function(e) {
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('gestureend', function(e) {
+    e.preventDefault();
+  }, { passive: false });
+
+  // Prevent keyboard zoom shortcuts (Ctrl/Cmd + plus/minus/0)
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && 
+        (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  // Prevent double-tap zoom on mobile
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e) {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, { passive: false });
+}
+
+// Call preventZoom when the script loads
+preventZoom();
+
 // Map of pressed/unpressed key codes (true = key down, false = key up)
 let keys = {length: 0};
 
