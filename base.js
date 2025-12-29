@@ -125,21 +125,68 @@ function randomBaseLocation(id) {
     // If optimal placement fails, fall through to random method
   }
   
-  // Fallback to old method
-  let rect;
-  let attempts = 0;
-  do {
-    rect = {
+  // Improved fallback method with distance checking
+  const MIN_DISTANCE_BETWEEN_BASES = 400; // Match mapgen.js setting
+  const attempts = 400; // More attempts for better placement
+  
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const rect = {
+      id: id,
+      x: Math.floor(Math.random() * (MAP_WIDTH - BASE_WIDTH * 3)) + BASE_WIDTH * 1.5,
+      y: Math.floor(Math.random() * (MAP_HEIGHT - BASE_HEIGHT * 3)) + BASE_HEIGHT * 1.5,
+      w: BASE_WIDTH,
+      h: BASE_HEIGHT
+    };
+    
+    // Check collision with terrain
+    if (collision(rect)) {
+      continue;
+    }
+    
+    // Check distance from all existing bases
+    let tooClose = false;
+    for (const existingBase of bases) {
+      const distance = Math.sqrt(
+        Math.pow(rect.x - existingBase.x, 2) + 
+        Math.pow(rect.y - existingBase.y, 2)
+      );
+      
+      if (distance < MIN_DISTANCE_BETWEEN_BASES) {
+        tooClose = true;
+        break;
+      }
+    }
+    
+    if (!tooClose) {
+      console.log('Found suitable base location at', rect.x, rect.y, 'after', attempt + 1, 'attempts');
+      return rect;
+    }
+  }
+  
+  // Last resort: just avoid collisions
+  console.warn('Could not find well-spaced base location, using any valid location');
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const rect = {
       id: id,
       x: Math.floor(Math.random() * (MAP_WIDTH - BASE_WIDTH * 2)) + BASE_WIDTH,
       y: Math.floor(Math.random() * (MAP_HEIGHT - BASE_HEIGHT * 2)) + BASE_HEIGHT,
       w: BASE_WIDTH,
       h: BASE_HEIGHT
     };
-    attempts++;
-  } while (collision(rect) && attempts < 100); // Add max attempts to prevent infinite loop
-
-  return rect;
+    
+    if (!collision(rect)) {
+      return rect;
+    }
+  }
+  
+  // Absolute last resort
+  return {
+    id: id,
+    x: BASE_WIDTH * 2,
+    y: BASE_HEIGHT * 2,
+    w: BASE_WIDTH,
+    h: BASE_HEIGHT
+  };
 }
 
 // Check if inside a base, to refuel/repair

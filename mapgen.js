@@ -8,8 +8,8 @@ const INITIAL_HEIGHT_VARIATION = 0.4; // Initial height variation
 const MIN_TUNNEL_WIDTH = 8; // Minimum tunnel width
 const MAX_TUNNEL_WIDTH = 20; // Maximum tunnel width
 const TUNNEL_COUNT = 12; // Number of main tunnels
-const MIN_BASE_DISTANCE = 500; // Minimum distance between bases
-const BORDER_CLEARANCE = 30; // Clearance from map edges for bases
+const MIN_BASE_DISTANCE = 400; // Minimum distance between bases (STRICT - much better spacing!)
+const BORDER_CLEARANCE = 80; // Clearance from map edges for bases
 
 // Simple seeded random number generator
 class SeededRandom {
@@ -387,11 +387,28 @@ function generateBackgroundLayer(terrain, width, height, seed) {
 class BaseManager {
   constructor() {
     this.existingBases = [];
+    this.quadrantsUsed = [false, false, false, false]; // Track which quadrants are used
   }
   
   // Find optimal location for a new base
   findOptimalBaseLocation(id, mapWidth, mapHeight, terrainData) {
-    const maxAttempts = 100;
+    console.log(`\n=== Finding location for base ${id} ===`);
+    console.log(`Existing bases: ${this.existingBases.length}`);
+    
+    // For first 4 players, use quadrant-based placement for better distribution
+    if (this.existingBases.length < 4) {
+      console.log(`Using quadrant-based placement (player ${this.existingBases.length + 1}/4)`);
+      const quadrantLocation = this.findQuadrantBasedLocation(id, mapWidth, mapHeight, terrainData);
+      if (quadrantLocation) {
+        this.existingBases.push(quadrantLocation);
+        this.logBaseDistances(quadrantLocation);
+        return quadrantLocation;
+      }
+    }
+    
+    // For 5+ players or if quadrant placement fails, use improved random placement
+    console.log(`Using random placement (player ${this.existingBases.length + 1})`);
+    const maxAttempts = 200; // Increased attempts for better placement
     let bestLocation = null;
     let bestScore = -1;
     
@@ -406,30 +423,188 @@ class BaseManager {
       
       const score = this.scoreBaseLocation(candidate, mapWidth, mapHeight, terrainData);
       
-      if (score > bestScore) {
+      // Only consider locations with positive score
+      if (score > 0 && score > bestScore) {
         bestScore = score;
         bestLocation = candidate;
       }
       
-      // If we found a good enough spot, use it
-      if (score > 0.8) {
+      // If we found a great spot, use it
+      if (score > 0.9) {
+        console.log(`Found excellent location after ${attempt + 1} attempts`);
         break;
       }
     }
     
-    if (bestLocation) {
+    if (bestLocation && bestScore > 0.3) { // Require minimum quality
+      console.log(`Placed base ${id} at (${Math.floor(bestLocation.x)}, ${Math.floor(bestLocation.y)}) with score ${bestScore.toFixed(2)}`);
       this.existingBases.push(bestLocation);
+      this.logBaseDistances(bestLocation);
+      return bestLocation;
     }
     
-    return bestLocation;
+    console.warn('Could not find good base location after', maxAttempts, 'attempts');
+    return null;
+  }
+  
+  // Log distances from new base to all existing bases (for debugging)
+  logBaseDistances(newBase) {
+    if (this.existingBases.length <= 1) return;
+    
+    console.log('Distances from new base:');
+    for (let i = 0; i < this.existingBases.length - 1; i++) {
+      const base = this.existingBases[i];
+      const distance = Math.sqrt(
+        Math.pow(newBase.x - base.x, 2) + Math.pow(newBase.y - base.y, 2)
+      );
+      const status = distance >= MIN_BASE_DISTANCE ? '✓' : '✗ TOO CLOSE!';
+      console.log(`  → Base ${base.id}: ${Math.floor(distance)} pixels ${status}`);
+    }
+  }
+  
+  // Place bases in quadrants for first 4 players (much better distribution)
+  findQuadrantBasedLocation(id, mapWidth, mapHeight, terrainData) {
+    // Determine which quadrant to use (cycle through 0-3)
+    let targetQuadrant = -1;
+    for (let i = 0; i < 4; i++) {
+      if (!this.quadrantsUsed[i]) {
+        targetQuadrant = i;
+        break;
+      }
+    }
+    
+    if (targetQuadrant === -1) {
+      return null; // All quadrants used
+    }
+    
+    // Define quadrant boundaries
+    const quadrantWidth = mapWidth / 2;
+    const quadrantHeight = mapHeight / 2;
+    
+    // Define target regions within quadrant (favor corners/edges)
+    // Each quadrant gets a preferred zone that's away from center
+    let preferredZones = [];
+    const edgeMargin = BORDER_CLEARANCE + 20;
+    const zoneSize = 150; // Size of preferred placement zone
+    
+    switch(targetQuadrant) {
+      case 0: // Top-left - favor top-left corner
+        preferredZones = [
+          { x: edgeMargin, y: edgeMargin, w: zoneSize, h: zoneSize, weight: 1.0 },
+          { x: edgeMargin, y: edgeMargin + zoneSize, w: zoneSize * 1.5, h: zoneSize, weight: 0.7 },
+          { x: edgeMargin + zoneSize, y: edgeMargin, w: zoneSize, h: zoneSize * 1.5, weight: 0.7 }
+        ];
+        break;
+      case 1: // Top-right - favor top-right corner
+        preferredZones = [
+          { x: mapWidth - edgeMargin - zoneSize, y: edgeMargin, w: zoneSize, h: zoneSize, weight: 1.0 },
+          { x: mapWidth - edgeMargin - zoneSize * 2.5, y: edgeMargin, w: zoneSize * 1.5, h: zoneSize, weight: 0.7 },
+          { x: mapWidth - edgeMargin - zoneSize, y: edgeMargin + zoneSize, w: zoneSize, h: zoneSize * 1.5, weight: 0.7 }
+        ];
+        break;
+      case 2: // Bottom-left - favor bottom-left corner
+        preferredZones = [
+          { x: edgeMargin, y: mapHeight - edgeMargin - zoneSize, w: zoneSize, h: zoneSize, weight: 1.0 },
+          { x: edgeMargin, y: mapHeight - edgeMargin - zoneSize * 2.5, w: zoneSize, h: zoneSize * 1.5, weight: 0.7 },
+          { x: edgeMargin + zoneSize, y: mapHeight - edgeMargin - zoneSize, w: zoneSize * 1.5, h: zoneSize, weight: 0.7 }
+        ];
+        break;
+      case 3: // Bottom-right - favor bottom-right corner
+        preferredZones = [
+          { x: mapWidth - edgeMargin - zoneSize, y: mapHeight - edgeMargin - zoneSize, w: zoneSize, h: zoneSize, weight: 1.0 },
+          { x: mapWidth - edgeMargin - zoneSize * 2.5, y: mapHeight - edgeMargin - zoneSize, w: zoneSize * 1.5, h: zoneSize, weight: 0.7 },
+          { x: mapWidth - edgeMargin - zoneSize, y: mapHeight - edgeMargin - zoneSize * 2.5, w: zoneSize, h: zoneSize * 1.5, weight: 0.7 }
+        ];
+        break;
+    }
+    
+    // Try preferred zones first (highest weight zones first)
+    preferredZones.sort((a, b) => b.weight - a.weight);
+    
+    for (const zone of preferredZones) {
+      const maxAttempts = 50;
+      let bestLocation = null;
+      let bestScore = -1;
+      
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const candidate = {
+          id: id,
+          x: zone.x + Math.random() * (zone.w - BASE_WIDTH),
+          y: zone.y + Math.random() * (zone.h - BASE_HEIGHT),
+          w: BASE_WIDTH,
+          h: BASE_HEIGHT
+        };
+        
+        const score = this.scoreBaseLocation(candidate, mapWidth, mapHeight, terrainData);
+        
+        if (score > 0 && score > bestScore) {
+          bestScore = score;
+          bestLocation = candidate;
+        }
+        
+        // If we found an excellent spot in preferred zone, use it immediately
+        if (score > 0.9) {
+          this.quadrantsUsed[targetQuadrant] = true;
+          console.log(`Placed base ${id} in quadrant ${targetQuadrant} (corner zone) at (${Math.floor(candidate.x)}, ${Math.floor(candidate.y)})`);
+          return bestLocation;
+        }
+      }
+      
+      // If we found a decent spot in this zone, use it
+      if (bestLocation && bestScore > 0.5) {
+        this.quadrantsUsed[targetQuadrant] = true;
+        console.log(`Placed base ${id} in quadrant ${targetQuadrant} (zone) at (${Math.floor(bestLocation.x)}, ${Math.floor(bestLocation.y)})`);
+        return bestLocation;
+      }
+    }
+    
+    // Fallback: try anywhere in the quadrant (not preferred)
+    const quadrantX = (targetQuadrant % 2) * quadrantWidth;
+    const quadrantY = Math.floor(targetQuadrant / 2) * quadrantHeight;
+    const margin = BASE_WIDTH + 40;
+    
+    const maxAttempts = 100;
+    let bestLocation = null;
+    let bestScore = -1;
+    
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const candidate = {
+        id: id,
+        x: quadrantX + margin + Math.random() * (quadrantWidth - 2 * margin - BASE_WIDTH),
+        y: quadrantY + margin + Math.random() * (quadrantHeight - 2 * margin - BASE_HEIGHT),
+        w: BASE_WIDTH,
+        h: BASE_HEIGHT
+      };
+      
+      const score = this.scoreBaseLocation(candidate, mapWidth, mapHeight, terrainData);
+      
+      if (score > 0 && score > bestScore) {
+        bestScore = score;
+        bestLocation = candidate;
+      }
+      
+      if (score > 0.85) {
+        break;
+      }
+    }
+    
+    if (bestLocation && bestScore > 0.3) {
+      this.quadrantsUsed[targetQuadrant] = true;
+      console.log(`Placed base ${id} in quadrant ${targetQuadrant} (fallback) at (${Math.floor(bestLocation.x)}, ${Math.floor(bestLocation.y)})`);
+      return bestLocation;
+    }
+    
+    console.warn(`Failed to place base ${id} in quadrant ${targetQuadrant}`);
+    return null;
   }
   
   // Score a potential base location (0.0 to 1.0, higher is better)
   scoreBaseLocation(candidate, mapWidth, mapHeight, terrainData) {
     let score = 1.0;
     
-    // First check: Must be placed entirely in diggable area (terrain[i] === 0)
-    let solidPixels = 0;
+    // First check: Must be placed entirely in diggable area (terrain[i] === 1, not 0!)
+    // terrain[i] === 0 means ROCK (solid), terrain[i] === 1 means DIGGABLE
+    let diggablePixels = 0;
     const totalPixels = candidate.w * candidate.h;
     
     for (let y = 0; y < candidate.h; y++) {
@@ -439,44 +614,61 @@ class BaseManager {
         
         if (mapX >= 0 && mapX < mapWidth && mapY >= 0 && mapY < mapHeight) {
           const terrainIndex = mapY * mapWidth + mapX;
-          if (terrainData && terrainData[terrainIndex] === 0) {
-            solidPixels++;
+          if (terrainData && terrainData[terrainIndex] === 1) { // 1 = diggable!
+            diggablePixels++;
           }
         }
       }
     }
     
-    // Reject locations with ANY solid rock underneath
-    if (solidPixels > 0) {
-      return 0; // Invalid location
+    // Require at least 95% diggable terrain
+    if (diggablePixels < totalPixels * 0.95) {
+      return 0; // Invalid location - too much rock
     }
     
-    // Check distance from other bases
+    // STRICT distance check from other bases
     for (const base of this.existingBases) {
       const distance = Math.sqrt(
         Math.pow(candidate.x - base.x, 2) + Math.pow(candidate.y - base.y, 2)
       );
       
+      // REJECT if too close (not just reduce score)
       if (distance < MIN_BASE_DISTANCE) {
-        score -= (MIN_BASE_DISTANCE - distance) / MIN_BASE_DISTANCE;
+        return 0; // Invalid - too close to another base
       }
+      
+      // Reward greater distances
+      const distanceBonus = Math.min(distance / (MIN_BASE_DISTANCE * 2), 1.0);
+      score = score * 0.8 + distanceBonus * 0.2;
     }
     
-    // Prefer locations closer to center but not too close to edges
+    // Slight preference for locations away from edges but not too centered
     const centerX = mapWidth / 2;
     const centerY = mapHeight / 2;
     const distanceFromCenter = Math.sqrt(
       Math.pow(candidate.x - centerX, 2) + Math.pow(candidate.y - centerY, 2)
     );
     const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY);
-    const centerScore = 1 - (distanceFromCenter / maxDistance);
-    score = score * 0.7 + centerScore * 0.3;
+    
+    // Prefer medium distance from center (not edges, not dead center)
+    const normalizedDistance = distanceFromCenter / maxDistance;
+    let positionScore;
+    if (normalizedDistance < 0.3) {
+      positionScore = normalizedDistance / 0.3; // Too close to center
+    } else if (normalizedDistance > 0.7) {
+      positionScore = (1.0 - normalizedDistance) / 0.3; // Too close to edges
+    } else {
+      positionScore = 1.0; // Sweet spot
+    }
+    
+    score = score * 0.9 + positionScore * 0.1;
     
     return Math.max(0, Math.min(1, score));
   }  
   // Clear all existing bases (for new game)
   reset() {
     this.existingBases = [];
+    this.quadrantsUsed = [false, false, false, false];
   }
 }
 
