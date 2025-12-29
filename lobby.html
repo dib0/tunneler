@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tunneler - Game Lobby</title>
+  
+  <style>
+    body {
+      background: linear-gradient(90deg, #161122 4px, transparent 1%) center, linear-gradient(#161122 4px, transparent 1%) center, #a799cc;
+      background-size: 5px 5px;
+      font-family: 'Lucida Console', monospace;
+      color: #ffffff;
+      margin: 0;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #333333;
+      border: 10px solid;
+      border-color: #aaaaaa #444444 #444444 #aaaaaa;
+      padding: 30px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    h1 {
+      text-align: center;
+      color: #ffff00;
+      text-shadow: 2px 2px 4px #000000;
+      margin-top: 0;
+    }
+
+    h2 {
+      color: #00ffff;
+      border-bottom: 2px solid #00ffff;
+      padding-bottom: 10px;
+      margin-top: 30px;
+    }
+
+    .panel {
+      background: #222222;
+      border: 5px solid;
+      border-color: #555555 #222222 #222222 #555555;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .button {
+      background: #888888;
+      border: 5px solid;
+      border-color: #aaaaaa #444444 #444444 #aaaaaa;
+      color: #ffffff;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-family: 'Lucida Console', monospace;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 5px;
+      transition: all 0.2s;
+    }
+
+    .button:hover {
+      background: #999999;
+      transform: translateY(-2px);
+    }
+
+    .button:active {
+      border-color: #444444 #aaaaaa #aaaaaa #444444;
+      transform: translateY(0);
+    }
+
+    .button-primary {
+      background: #00aa00;
+    }
+
+    .button-primary:hover {
+      background: #00cc00;
+    }
+
+    .button-danger {
+      background: #aa0000;
+    }
+
+    .button-danger:hover {
+      background: #cc0000;
+    }
+
+    .input-field {
+      background: #111111;
+      border: 5px solid;
+      border-color: #444444 #aaaaaa #aaaaaa #444444;
+      color: #ffffff;
+      padding: 10px;
+      font-size: 16px;
+      font-family: 'Lucida Console', monospace;
+      width: calc(100% - 30px);
+      margin: 10px 0;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: #00ffff #00ffff #00ffff #00ffff;
+    }
+
+    .room-code {
+      font-size: 32px;
+      font-weight: bold;
+      color: #00ff00;
+      text-align: center;
+      background: #000000;
+      padding: 20px;
+      margin: 20px 0;
+      letter-spacing: 8px;
+      border: 3px solid #00ff00;
+      text-shadow: 0 0 10px #00ff00;
+    }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .config-item {
+      background: #1a1a1a;
+      padding: 15px;
+      border-left: 4px solid #00ffff;
+    }
+
+    .config-label {
+      color: #ffff00;
+      font-weight: bold;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+    }
+
+    .checkbox-container input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+
+    .select-field {
+      background: #111111;
+      border: 5px solid;
+      border-color: #444444 #aaaaaa #aaaaaa #444444;
+      color: #ffffff;
+      padding: 10px;
+      font-size: 16px;
+      font-family: 'Lucida Console', monospace;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .ai-player-list {
+      margin: 15px 0;
+    }
+
+    .ai-player-item {
+      background: #0a0a0a;
+      padding: 10px;
+      margin: 8px 0;
+      border-left: 3px solid #ff8800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .player-list {
+      margin: 15px 0;
+    }
+
+    .player-item {
+      background: #0a0a0a;
+      padding: 12px;
+      margin: 8px 0;
+      border-left: 3px solid #00ff00;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .player-item.ai {
+      border-left-color: #ff8800;
+    }
+
+    .player-item .player-name {
+      font-weight: bold;
+    }
+
+    .player-item .player-role {
+      color: #ffff00;
+      font-size: 12px;
+    }
+
+    .status-message {
+      background: #003300;
+      border: 2px solid #00ff00;
+      color: #00ff00;
+      padding: 15px;
+      margin: 15px 0;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .error-message {
+      background: #330000;
+      border: 2px solid #ff0000;
+      color: #ff0000;
+      padding: 15px;
+      margin: 15px 0;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .share-link {
+      background: #000000;
+      border: 2px solid #00ffff;
+      padding: 10px;
+      margin: 10px 0;
+      word-break: break-all;
+      font-size: 14px;
+      color: #00ffff;
+      cursor: pointer;
+    }
+
+    .share-link:hover {
+      background: #111111;
+    }
+
+    .info-text {
+      color: #aaaaaa;
+      font-size: 14px;
+      margin: 10px 0;
+    }
+
+    .preset-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .preset-button {
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+
+    @media screen and (max-width: 600px) {
+      .container {
+        padding: 15px;
+      }
+
+      .button {
+        padding: 10px 16px;
+        font-size: 14px;
+      }
+
+      .room-code {
+        font-size: 24px;
+        letter-spacing: 4px;
+      }
+
+      .config-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 TUNNELER LOBBY 🎮</h1>
+
+    <!-- Main Menu -->
+    <div id="mainMenu" class="panel">
+      <button class="button button-primary" onclick="showCreateRoom()">Create New Game</button>
+      <button class="button" onclick="showJoinRoom()">Join Game</button>
+      
+      <div class="info-text" style="margin-top: 30px;">
+        <p><strong>About Tunneler:</strong> A multiplayer tank combat game where you dig tunnels, defend your base, and battle opponents!</p>
+        <p>Create a private room with custom settings, or join an existing game with a room code.</p>
+      </div>
+    </div>
+
+    <!-- Create Room Panel -->
+    <div id="createRoomPanel" class="panel hidden">
+      <h2>Create New Game Room</h2>
+      
+      <div class="config-item">
+        <label class="config-label">Your Name:</label>
+        <input type="text" id="hostName" class="input-field" placeholder="Enter your name" value="Player">
+      </div>
+
+      <h3 style="color: #ffff00; margin-top: 30px;">Game Settings</h3>
+      
+      <div class="preset-buttons">
+        <button class="button preset-button" onclick="applyPreset('classic')">Classic</button>
+        <button class="button preset-button" onclick="applyPreset('hardcore')">Hardcore</button>
+        <button class="button preset-button" onclick="applyPreset('casual')">Casual</button>
+        <button class="button preset-button" onclick="applyPreset('chaos')">Chaos</button>
+      </div>
+
+      <div class="config-grid">
+        <div class="config-item">
+          <label class="config-label">Max Players:</label>
+          <select id="maxPlayers" class="select-field">
+            <option value="2">2 Players</option>
+            <option value="3">3 Players</option>
+            <option value="4" selected>4 Players</option>
+          </select>
+        </div>
+
+        <div class="config-item">
+          <label class="config-label">Max Lives:</label>
+          <select id="maxLives" class="select-field">
+            <option value="0">Infinite</option>
+            <option value="1">1 Life</option>
+            <option value="3" selected>3 Lives</option>
+            <option value="5">5 Lives</option>
+            <option value="10">10 Lives</option>
+          </select>
+        </div>
+
+        <div class="config-item">
+          <label class="config-label">AI Opponents:</label>
+          <select id="aiCount" class="select-field" onchange="updateAISettings()">
+            <option value="0" selected>No AI</option>
+            <option value="1">1 AI Player</option>
+            <option value="2">2 AI Players</option>
+            <option value="3">3 AI Players</option>
+          </select>
+        </div>
+
+        <div class="config-item">
+          <label class="config-label">AI Difficulty:</label>
+          <select id="aiDifficulty" class="select-field">
+            <option value="easy">Easy</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="aiPlayerConfig" class="hidden">
+        <h3 style="color: #ff8800;">AI Player Configuration</h3>
+        <div id="aiPlayerList" class="ai-player-list"></div>
+      </div>
+
+      <h3 style="color: #00ffff; margin-top: 30px;">Game Rules</h3>
+      
+      <div class="checkbox-container">
+        <input type="checkbox" id="spawnProtectionEnabled" checked>
+        <label>Enable Spawn Protection (invulnerability when spawning)</label>
+      </div>
+
+      <div class="checkbox-container">
+        <input type="checkbox" id="sanctuaryZonesEnabled" checked>
+        <label>Enable Sanctuary Zones (safe zones near bases)</label>
+      </div>
+
+      <div class="checkbox-container">
+        <input type="checkbox" id="antiCampingEnabled" checked>
+        <label>Enable Anti-Camping (damage for camping near enemy base)</label>
+      </div>
+
+      <div style="margin-top: 30px; text-align: center;">
+        <button class="button button-primary" onclick="createRoom()">Create Room</button>
+        <button class="button" onclick="showMainMenu()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Join Room Panel -->
+    <div id="joinRoomPanel" class="panel hidden">
+      <h2>Join Game Room</h2>
+      
+      <div class="config-item">
+        <label class="config-label">Your Name:</label>
+        <input type="text" id="playerName" class="input-field" placeholder="Enter your name" value="Player">
+      </div>
+
+      <div class="config-item">
+        <label class="config-label">Room Code:</label>
+        <input type="text" id="roomCodeInput" class="input-field" placeholder="Enter 6-character room code" maxlength="6" style="text-transform: uppercase;">
+      </div>
+
+      <div style="margin-top: 30px; text-align: center;">
+        <button class="button button-primary" onclick="joinRoom()">Join Room</button>
+        <button class="button" onclick="showMainMenu()">Cancel</button>
+      </div>
+
+      <div id="joinError" class="error-message hidden"></div>
+    </div>
+
+    <!-- Room Lobby Panel -->
+    <div id="roomLobbyPanel" class="panel hidden">
+      <h2>Game Room Lobby</h2>
+      
+      <div class="room-code" id="roomCodeDisplay"></div>
+      
+      <div class="share-link" id="shareLink" onclick="copyShareLink()">
+        Click to copy share link
+      </div>
+
+      <div class="status-message" id="lobbyStatus">
+        Waiting for players...
+      </div>
+
+      <h3 style="color: #00ff00;">Players in Room</h3>
+      <div id="playerListDisplay" class="player-list"></div>
+
+      <div id="roomConfigDisplay" class="config-grid" style="margin-top: 30px;"></div>
+
+      <div style="margin-top: 30px; text-align: center;">
+        <button id="startGameButton" class="button button-primary hidden" onclick="startGame()">Start Game</button>
+        <button class="button button-danger" onclick="leaveRoom()">Leave Room</button>
+      </div>
+
+      <div id="lobbyError" class="error-message hidden"></div>
+    </div>
+  </div>
+
+  <script src="lobby.js"></script>
+</body>
+</html>

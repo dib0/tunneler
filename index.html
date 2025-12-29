@@ -4,6 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   
+  <!-- Redirect to lobby if no room specified -->
+  <script>
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomCode = urlParams.get('room');
+      
+      // If no room code, redirect to lobby
+      if (!roomCode) {
+        console.log('No room specified, redirecting to lobby...');
+        window.location.href = '/lobby.html';
+        return;
+      }
+      
+      // Store room code for game to use
+      sessionStorage.setItem('roomCode', roomCode);
+      console.log('Loading game for room:', roomCode);
+    })();
+  </script>
+  
   <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="icon" type="image/png" href="favicon.png">

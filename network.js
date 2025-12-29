@@ -29,6 +29,7 @@ const MSG_NAME = 'N';
 const MSG_EXIT = 'X';
 const MSG_MAP_SEED = 'S';
 const MSG_MAP_DATA = 'M';
+const MSG_GAME_CONNECT = 'G'; // NEW: Game connection with room code
 
 // Connection to the server
 let socket;
@@ -42,7 +43,7 @@ const outbox = [];
 
 // Connect to server. Push incoming messages on the queue
 function connect() {
-  console.log(`Connecting to: ${SERVER_URL}`); // Debug log to show which protocol is being used
+  console.log(`Connecting to: ${SERVER_URL}`);
   
   socket = new WebSocket(SERVER_URL);
   
@@ -62,6 +63,21 @@ function connect() {
     console.log("Connected to " + SERVER_URL);
     connected = true;
 
+    // Send room code if this is a game connection
+    const roomCode = sessionStorage.getItem('roomCode');
+    const playerId = sessionStorage.getItem('playerId');
+    
+    if (roomCode && playerId) {
+      console.log('🎮 Joining game room:', roomCode, 'as player:', playerId);
+      // Send GAME_CONNECT message with room code and player ID
+      socket.send(JSON.stringify({
+        type: 'GAME_CONNECT',
+        roomCode: roomCode,
+        playerId: parseInt(playerId)
+      }));
+    }
+
+    // Send any queued messages
     while (outbox.length > 0) {
       const msg = outbox.shift();
       socket.send(msg);
@@ -91,6 +107,24 @@ function getMessage() {
   if (inbox.length > 0) {
     const s = inbox.shift();
     console.log("Raw message:", s.charAt(0), s.substring(0, 20)); // DEBUG
+    
+    // Handle JSON messages (errors, etc.)
+    if (s.startsWith('{')) {
+      try {
+        const jsonMsg = JSON.parse(s);
+        if (jsonMsg.type === 'ERROR') {
+          console.error('❌ Server error:', jsonMsg.error);
+          alert('Server error: ' + jsonMsg.error);
+          return null;
+        }
+        // Other JSON messages can be added here
+        return null;
+      } catch (e) {
+        console.error('Failed to parse JSON message:', e);
+        return null;
+      }
+    }
+    
     const arr = s.split(" ");
     const action = arr[0];
     
