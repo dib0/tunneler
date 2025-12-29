@@ -6,7 +6,7 @@
  * sendMessage, collides, collision, digRect, digCrater, playSound, displayAlert
  * MSG_FIRE, TANK_WIDTH, TANK_HEIGHT, MAP_WIDTH, MAP_HEIGHT,
  * HIT_OBJECT, HIT_PLAYER,
- * MSG_LOST
+ * MSG_LOST, GameConfig
  */
 
 const BULLET_DIAMETER = 1;
@@ -19,16 +19,7 @@ const MAX_BULLETS_FIRED = 10;
 // Wait 30 event loops (3 seconds) after destroyed
 const WAIT_FRAMES_ON_RESTART = 30;
 
-// === SPAWN PROTECTION SETTINGS ===
-// Set ENABLE_SPAWN_PROTECTION to true to enable spawn protection, false to disable
-var ENABLE_SPAWN_PROTECTION = true;  // Change to false to disable spawn protection
-
-// Duration of spawn protection in frames (50 frames = 5 seconds at 10 FPS)
-const SPAWN_PROTECTION_FRAMES = 50;  // Adjust duration here
-
-// Set to true to show visual shield indicator
-var SHOW_SPAWN_PROTECTION_SHIELD = true;  // Change to false to hide shield visual
-
+// Spawn protection timer (managed by GameConfig)
 var spawnProtectionTimer = 0;
 
 // Reload varies between 0 and RELOAD_TIME.
@@ -39,21 +30,21 @@ var bullets = [];
 
 // Check if player has spawn protection active
 function hasSpawnProtection() {
-  return ENABLE_SPAWN_PROTECTION && spawnProtectionTimer > 0;
+  return GameConfig.spawnProtection.enabled && spawnProtectionTimer > 0;
 }
 
 // Activate spawn protection
 function activateSpawnProtection() {
-  if (ENABLE_SPAWN_PROTECTION) {
-    spawnProtectionTimer = SPAWN_PROTECTION_FRAMES;
+  if (GameConfig.spawnProtection.enabled) {
+    spawnProtectionTimer = GameConfig.spawnProtection.duration;
   }
 }
 
 // Update spawn protection timer (call this every frame)
 function updateSpawnProtection() {
-  if (ENABLE_SPAWN_PROTECTION && spawnProtectionTimer > 0) {
+  if (GameConfig.spawnProtection.enabled && spawnProtectionTimer > 0) {
     spawnProtectionTimer--;
-    if (spawnProtectionTimer === 0) {
+    if (spawnProtectionTimer === 0 && GameConfig.spawnProtection.showNotifications) {
       displayAlert('Spawn protection expired');
     }
   }
@@ -61,9 +52,11 @@ function updateSpawnProtection() {
 
 // Deactivate spawn protection (when player fires)
 function deactivateSpawnProtection() {
-  if (ENABLE_SPAWN_PROTECTION && spawnProtectionTimer > 0) {
+  if (GameConfig.spawnProtection.enabled && GameConfig.spawnProtection.removeOnFire && spawnProtectionTimer > 0) {
     spawnProtectionTimer = 0;
-    displayAlert('Spawn protection removed - you fired a weapon');
+    if (GameConfig.spawnProtection.showNotifications) {
+      displayAlert('Spawn protection removed - you fired a weapon');
+    }
   }
 }
 
