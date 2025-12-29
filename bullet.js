@@ -19,11 +19,43 @@ const MAX_BULLETS_FIRED = 10;
 // Wait 30 event loops (3 seconds) after destroyed
 const WAIT_FRAMES_ON_RESTART = 30;
 
+// Spawn protection - 5 seconds of invulnerability after respawn (50 frames at 10fps)
+const SPAWN_PROTECTION_FRAMES = 50;
+var spawnProtectionTimer = 0;
+
 // Reload varies between 0 and RELOAD_TIME.
-let reload = 0;
+var reload = 0;
 
 // List of bullets flying around
-const bullets = [];
+var bullets = [];
+
+// Check if player has spawn protection active
+function hasSpawnProtection() {
+  return spawnProtectionTimer > 0;
+}
+
+// Activate spawn protection
+function activateSpawnProtection() {
+  spawnProtectionTimer = SPAWN_PROTECTION_FRAMES;
+}
+
+// Update spawn protection timer (call this every frame)
+function updateSpawnProtection() {
+  if (spawnProtectionTimer > 0) {
+    spawnProtectionTimer--;
+    if (spawnProtectionTimer === 0) {
+      displayAlert('Spawn protection expired');
+    }
+  }
+}
+
+// Deactivate spawn protection (when player fires)
+function deactivateSpawnProtection() {
+  if (spawnProtectionTimer > 0) {
+    spawnProtectionTimer = 0;
+    displayAlert('Spawn protection removed - you fired a weapon');
+  }
+}
 
 // Count whether the player has too many bullets on-air concurrently.
 function tooManyBullets() {
@@ -39,6 +71,9 @@ function fire(id) {
     player.energy--;
     sendMessage(MSG_FIRE, player.id);
     reload = RELOAD_TIME;
+    
+    // Firing removes spawn protection
+    deactivateSpawnProtection();
   }
 
   const tank = (id == player.id ? player : opponents.get(id));
@@ -145,6 +180,12 @@ function impact(b) {
       playSound(sndHit);
     }
     if (alive && (b.id != player.id) && (victim.id == player.id)) {
+        // Check spawn protection
+        if (hasSpawnProtection()) {
+          displayAlert('Protected! Spawn protection active');
+          return true; // Bullet is destroyed but no damage dealt
+        }
+        
         // OUCH!
         player.health -= 1;
 

@@ -302,10 +302,55 @@ const sparks = [];
 // Whether we need to redraw the screen
 let redrawRequest = false;
 
+// Prevent zoom on all platforms
+function preventZoom() {
+  // Prevent Ctrl/Cmd + Plus/Minus/0
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && 
+        (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+      e.preventDefault();
+      return false;
+    }
+  }, { passive: false });
+
+  // Prevent Ctrl/Cmd + Mouse Wheel zoom
+  document.addEventListener('wheel', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      return false;
+    }
+  }, { passive: false });
+
+  // Prevent pinch zoom on touch devices
+  document.addEventListener('touchmove', function(e) {
+    if (e.touches.length > 1) {
+      e.preventDefault();
+      return false;
+    }
+  }, { passive: false });
+
+  // Prevent double-tap zoom on mobile
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e) {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, false);
+
+  // Additional prevention for gesturestart (Safari)
+  document.addEventListener('gesturestart', function(e) {
+    e.preventDefault();
+  }, false);
+}
+
 // Start the game client: Load all image and sound files, connect to the server,
 // and initialize the canvas.
 // initCanvas() will start a timer to run the main event loop: procesEvents()
 function tunneler() {
+  preventZoom();
+  
   // === SHOW LOADING OVERLAY AT THE VERY START ===
   loadingOverlay.show();
   loadingOverlay.updateProgress(5, 'Starting game...');
@@ -478,6 +523,12 @@ function initGameState(id) {
   alive = true;
   initialized = true;
 
+  // Activate spawn protection for new player
+  if (typeof activateSpawnProtection !== 'undefined') {
+    activateSpawnProtection();
+    displayAlert('🛡️ Spawn protection active for 5 seconds');
+  }
+
   // === HIDE LOADING OVERLAY WHEN GAME IS READY ===
   loadingOverlay.updateProgress(100, 'Game ready!');
   setTimeout(() => {
@@ -603,6 +654,16 @@ function processEvents() {
   }
 
   if (alive) {
+    // Update spawn protection timer
+    if (typeof updateSpawnProtection !== 'undefined') {
+      updateSpawnProtection();
+    }
+    
+    // Check for camping behavior
+    if (typeof updateCampingDetection !== 'undefined') {
+      updateCampingDetection();
+    }
+    
     if (refuel()) {
       redrawRequest = true;
     }
@@ -855,6 +916,13 @@ function restart() {
   centerLensOnPlayer();
   sendMessage(MSG_MOVE, player);
   alive = true;
+  
+  // Activate spawn protection
+  if (typeof activateSpawnProtection !== 'undefined') {
+    activateSpawnProtection();
+    displayAlert('🛡️ Spawn protection active for 5 seconds');
+  }
+  
   redrawScreen();
 }
 

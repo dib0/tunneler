@@ -53,6 +53,27 @@ function drawTank(t) {
     if (tankImage && tankImage.complete && tankImage.naturalWidth > 0) {
       viewportCtx.drawImage(tankImage, t.x - lens.x, t.y - lens.y);
       
+      // Draw spawn protection shield effect
+      if (t.id === player.id && typeof hasSpawnProtection !== 'undefined' && hasSpawnProtection()) {
+        const shieldAlpha = 0.3 + Math.sin(Date.now() / 100) * 0.2; // Pulsing effect
+        viewportCtx.save();
+        viewportCtx.globalAlpha = shieldAlpha;
+        viewportCtx.strokeStyle = '#00ffff';
+        viewportCtx.lineWidth = 2;
+        viewportCtx.strokeRect(
+          t.x - lens.x - 2,
+          t.y - lens.y - 2,
+          TANK_WIDTH + 4,
+          TANK_HEIGHT + 4
+        );
+        
+        // Draw shield icon
+        viewportCtx.fillStyle = '#00ffff';
+        viewportCtx.font = 'bold 10px monospace';
+        viewportCtx.fillText('🛡️', t.x - lens.x + TANK_WIDTH / 2 - 5, t.y - lens.y - 5);
+        viewportCtx.restore();
+      }
+      
       // Draw opponent's name under the tank
       if (t.id != player.id) {
         viewportCtx.fillStyle = 'white';
@@ -81,6 +102,48 @@ function drawBullet(b) {
 function drawBase(b) {
   if (collides(b, lens)) {
     drawBaseWalls(viewportCtx, b, b.x - lens.x, b.y - lens.y);
+    
+    // Draw sanctuary zone indicator if player is near
+    if (typeof isInSanctuaryZone !== 'undefined') {
+      const baseX = b.x + 20; // BASE_WIDTH / 2
+      const baseY = b.y + 40; // BASE_HEIGHT (entrance at bottom)
+      const playerX = player.x + 5; // TANK_WIDTH / 2
+      const playerY = player.y + 5; // TANK_HEIGHT / 2
+      
+      const dx = playerX - baseX;
+      const dy = playerY - baseY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // Show sanctuary zone when player is nearby
+      const SANCTUARY_ZONE_RADIUS = 60;
+      if (distance <= SANCTUARY_ZONE_RADIUS + 50) {
+        viewportCtx.save();
+        viewportCtx.globalAlpha = 0.15;
+        viewportCtx.strokeStyle = b.id === player.id ? '#00ff00' : '#ffff00';
+        viewportCtx.lineWidth = 2;
+        viewportCtx.setLineDash([5, 5]);
+        viewportCtx.beginPath();
+        viewportCtx.arc(
+          b.x + 20 - lens.x,
+          b.y + 40 - lens.y,
+          SANCTUARY_ZONE_RADIUS,
+          0,
+          2 * Math.PI
+        );
+        viewportCtx.stroke();
+        viewportCtx.setLineDash([]);
+        viewportCtx.restore();
+        
+        // Show sanctuary text if in zone
+        if (b.id === player.id && distance <= SANCTUARY_ZONE_RADIUS) {
+          viewportCtx.save();
+          viewportCtx.fillStyle = '#00ff00';
+          viewportCtx.font = 'bold 8px monospace';
+          viewportCtx.fillText('SAFE ZONE', b.x - lens.x, b.y - lens.y - 5);
+          viewportCtx.restore();
+        }
+      }
+    }
   }
 }
 

@@ -11,8 +11,107 @@
 const BASE_WIDTH = 40;
 const BASE_HEIGHT = 40;
 
+// Sanctuary zone extends this many pixels beyond base boundaries
+const SANCTUARY_ZONE_RADIUS = 60;
+
+// Anti-camping detection
+const CAMPING_DETECTION_RADIUS = 80;
+const CAMPING_TIME_THRESHOLD = 100; // frames (10 seconds at 10fps)
+const CAMPING_PENALTY_DAMAGE = 0.5; // damage per frame when camping
+
+// Track camping behavior
+const campingTrackers = new Map(); // playerId -> {baseId, frames, lastWarned}
+
 // List of bases
 const bases = [];
+
+// Check if a position is within a sanctuary zone (protected area around base entrance)
+function isInSanctuaryZone(x, y, baseId) {
+  const base = bases.find(b => b.id == baseId);
+  if (!base) return false;
+  
+  // Calculate center of base entrance (bottom of base)
+  const entranceX = base.x + BASE_WIDTH / 2;
+  const entranceY = base.y + BASE_HEIGHT;
+  
+  // Check distance from entrance
+  const dx = x + TANK_WIDTH / 2 - entranceX;
+  const dy = y + TANK_HEIGHT / 2 - entranceY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  return distance <= SANCTUARY_ZONE_RADIUS;
+}
+
+// Check if player is in their own base's sanctuary zone
+function isInOwnSanctuary() {
+  return isInSanctuaryZone(player.x, player.y, player.id);
+}
+
+// Detect and penalize camping behavior
+function updateCampingDetection() {
+  let isCamping = false;
+  
+  // Check if player is near any enemy base
+  for (const base of bases) {
+    if (base.id === player.id) continue; // Skip own base
+    
+    const baseX = base.x + BASE_WIDTH / 2;
+    const baseY = base.y + BASE_HEIGHT / 2;
+    const playerX = player.x + TANK_WIDTH / 2;
+    const playerY = player.y + TANK_HEIGHT / 2;
+    
+    const dx = playerX - baseX;
+    const dy = playerY - baseY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance <= CAMPING_DETECTION_RADIUS) {
+      isCamping = true;
+      const trackingKey = `${player.id}-${base.id}`;
+      
+      if (!campingTrackers.has(trackingKey)) {
+        campingTrackers.set(trackingKey, {
+          baseId: base.id,
+          frames: 0,
+          lastWarned: 0
+        });
+      }
+      
+      const tracker = campingTrackers.get(trackingKey);
+      tracker.frames++;
+      
+      // Warn player at 50% threshold
+      if (tracker.frames === Math.floor(CAMPING_TIME_THRESHOLD / 2) && tracker.lastWarned < tracker.frames) {
+        displayAlert('⚠️ Warning: Stop camping or take damage!');
+        tracker.lastWarned = tracker.frames;
+      }
+      
+      // Apply camping penalty
+      if (tracker.frames >= CAMPING_TIME_THRESHOLD) {
+        if (tracker.frames % 10 === 0) { // Warn every second
+          displayAlert('🔥 Camping penalty! Taking damage...');
+        }
+        player.health -= CAMPING_PENALTY_DAMAGE;
+        
+        if (player.health <= 0) {
+          displayAlert("Destroyed by camping penalty!");
+          sendMessage(MSG_LOST, {id: player.id, by: player.id});
+          alive = false;
+          digCrater(player.x + Math.floor(TANK_WIDTH / 2), player.y + Math.floor(TANK_HEIGHT / 2), 4 * TANK_WIDTH + 1, 4 * TANK_HEIGHT + 1);
+          wrecks.push(player);
+          playSound(sndLost);
+          wait = WAIT_FRAMES_ON_RESTART;
+        }
+      }
+      
+      break; // Only track one base at a time
+    }
+  }
+  
+  // Reset camping tracker if not camping
+  if (!isCamping) {
+    campingTrackers.clear();
+  }
+}
 
 // Generate a random location for a new base (with logic to place
 // bases not too close to each other)
