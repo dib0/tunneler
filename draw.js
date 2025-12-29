@@ -53,8 +53,9 @@ function drawTank(t) {
     if (tankImage && tankImage.complete && tankImage.naturalWidth > 0) {
       viewportCtx.drawImage(tankImage, t.x - lens.x, t.y - lens.y);
       
-      // Draw spawn protection shield effect
-      if (t.id === player.id && typeof hasSpawnProtection !== 'undefined' && hasSpawnProtection()) {
+      // Draw spawn protection shield effect if enabled
+      if (typeof GameConfig !== 'undefined' && GameConfig.spawnProtection.showShield && 
+          t.id === player.id && typeof hasSpawnProtection !== 'undefined' && hasSpawnProtection()) {
         const shieldAlpha = 0.3 + Math.sin(Date.now() / 100) * 0.2; // Pulsing effect
         viewportCtx.save();
         viewportCtx.globalAlpha = shieldAlpha;
@@ -103,8 +104,9 @@ function drawBase(b) {
   if (collides(b, lens)) {
     drawBaseWalls(viewportCtx, b, b.x - lens.x, b.y - lens.y);
     
-    // Draw sanctuary zone indicator if player is near
-    if (typeof isInSanctuaryZone !== 'undefined') {
+    // Draw sanctuary zone indicator if enabled and player is near
+    if (typeof GameConfig !== 'undefined' && GameConfig.sanctuaryZones.enabled && 
+        GameConfig.sanctuaryZones.showVisuals && typeof isInSanctuaryZone !== 'undefined') {
       const baseX = b.x + 20; // BASE_WIDTH / 2
       const baseY = b.y + 40; // BASE_HEIGHT (entrance at bottom)
       const playerX = player.x + 5; // TANK_WIDTH / 2
@@ -115,8 +117,8 @@ function drawBase(b) {
       const distance = Math.sqrt(dx * dx + dy * dy);
       
       // Show sanctuary zone when player is nearby
-      const SANCTUARY_ZONE_RADIUS = 60;
-      if (distance <= SANCTUARY_ZONE_RADIUS + 50) {
+      const zoneRadius = GameConfig.sanctuaryZones.radius;
+      if (distance <= zoneRadius + 50) {
         viewportCtx.save();
         viewportCtx.globalAlpha = 0.15;
         viewportCtx.strokeStyle = b.id === player.id ? '#00ff00' : '#ffff00';
@@ -126,7 +128,7 @@ function drawBase(b) {
         viewportCtx.arc(
           b.x + 20 - lens.x,
           b.y + 40 - lens.y,
-          SANCTUARY_ZONE_RADIUS,
+          zoneRadius,
           0,
           2 * Math.PI
         );
@@ -135,7 +137,7 @@ function drawBase(b) {
         viewportCtx.restore();
         
         // Show sanctuary text if in zone
-        if (b.id === player.id && distance <= SANCTUARY_ZONE_RADIUS) {
+        if (b.id === player.id && distance <= zoneRadius) {
           viewportCtx.save();
           viewportCtx.fillStyle = '#00ff00';
           viewportCtx.font = 'bold 8px monospace';

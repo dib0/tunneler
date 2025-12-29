@@ -19,8 +19,16 @@ const MAX_BULLETS_FIRED = 10;
 // Wait 30 event loops (3 seconds) after destroyed
 const WAIT_FRAMES_ON_RESTART = 30;
 
-// Spawn protection - 5 seconds of invulnerability after respawn (50 frames at 10fps)
-const SPAWN_PROTECTION_FRAMES = 50;
+// === SPAWN PROTECTION SETTINGS ===
+// Set ENABLE_SPAWN_PROTECTION to true to enable spawn protection, false to disable
+var ENABLE_SPAWN_PROTECTION = true;  // Change to false to disable spawn protection
+
+// Duration of spawn protection in frames (50 frames = 5 seconds at 10 FPS)
+const SPAWN_PROTECTION_FRAMES = 50;  // Adjust duration here
+
+// Set to true to show visual shield indicator
+var SHOW_SPAWN_PROTECTION_SHIELD = true;  // Change to false to hide shield visual
+
 var spawnProtectionTimer = 0;
 
 // Reload varies between 0 and RELOAD_TIME.
@@ -31,17 +39,19 @@ var bullets = [];
 
 // Check if player has spawn protection active
 function hasSpawnProtection() {
-  return spawnProtectionTimer > 0;
+  return ENABLE_SPAWN_PROTECTION && spawnProtectionTimer > 0;
 }
 
 // Activate spawn protection
 function activateSpawnProtection() {
-  spawnProtectionTimer = SPAWN_PROTECTION_FRAMES;
+  if (ENABLE_SPAWN_PROTECTION) {
+    spawnProtectionTimer = SPAWN_PROTECTION_FRAMES;
+  }
 }
 
 // Update spawn protection timer (call this every frame)
 function updateSpawnProtection() {
-  if (spawnProtectionTimer > 0) {
+  if (ENABLE_SPAWN_PROTECTION && spawnProtectionTimer > 0) {
     spawnProtectionTimer--;
     if (spawnProtectionTimer === 0) {
       displayAlert('Spawn protection expired');
@@ -51,7 +61,7 @@ function updateSpawnProtection() {
 
 // Deactivate spawn protection (when player fires)
 function deactivateSpawnProtection() {
-  if (spawnProtectionTimer > 0) {
+  if (ENABLE_SPAWN_PROTECTION && spawnProtectionTimer > 0) {
     spawnProtectionTimer = 0;
     displayAlert('Spawn protection removed - you fired a weapon');
   }

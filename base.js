@@ -5,19 +5,11 @@
 
 /* global player, shapesData
  * MAP_WIDTH, MAP_HEIGHT, TANK_WIDTH, TANK_HEIGHT, TANK_MAX_ENERGY, TANK_MAX_HEALTH,
- * collision, digBase
+ * collision, digBase, GameConfig
  */
 
 const BASE_WIDTH = 40;
 const BASE_HEIGHT = 40;
-
-// Sanctuary zone extends this many pixels beyond base boundaries
-const SANCTUARY_ZONE_RADIUS = 60;
-
-// Anti-camping detection
-const CAMPING_DETECTION_RADIUS = 80;
-const CAMPING_TIME_THRESHOLD = 100; // frames (10 seconds at 10fps)
-const CAMPING_PENALTY_DAMAGE = 0.5; // damage per frame when camping
 
 // Track camping behavior
 const campingTrackers = new Map(); // playerId -> {baseId, frames, lastWarned}
@@ -27,6 +19,8 @@ const bases = [];
 
 // Check if a position is within a sanctuary zone (protected area around base entrance)
 function isInSanctuaryZone(x, y, baseId) {
+  if (!GameConfig.sanctuaryZones.enabled) return false;
+  
   const base = bases.find(b => b.id == baseId);
   if (!base) return false;
   
@@ -39,7 +33,7 @@ function isInSanctuaryZone(x, y, baseId) {
   const dy = y + TANK_HEIGHT / 2 - entranceY;
   const distance = Math.sqrt(dx * dx + dy * dy);
   
-  return distance <= SANCTUARY_ZONE_RADIUS;
+  return distance <= GameConfig.sanctuaryZones.radius;
 }
 
 // Check if player is in their own base's sanctuary zone
@@ -49,6 +43,10 @@ function isInOwnSanctuary() {
 
 // Detect and penalize camping behavior
 function updateCampingDetection() {
+  if (!GameConfig.antiCamping.enabled) {
+    return; // Anti-camping disabled
+  }
+  
   let isCamping = false;
   
   // Check if player is near any enemy base
@@ -64,7 +62,7 @@ function updateCampingDetection() {
     const dy = playerY - baseY;
     const distance = Math.sqrt(dx * dx + dy * dy);
     
-    if (distance <= CAMPING_DETECTION_RADIUS) {
+    if (distance <= GameConfig.antiCamping.detectionRadius) {
       isCamping = true;
       const trackingKey = `${player.id}-${base.id}`;
       
@@ -79,18 +77,20 @@ function updateCampingDetection() {
       const tracker = campingTrackers.get(trackingKey);
       tracker.frames++;
       
-      // Warn player at 50% threshold
-      if (tracker.frames === Math.floor(CAMPING_TIME_THRESHOLD / 2) && tracker.lastWarned < tracker.frames) {
+      // Warn player at warning threshold
+      if (GameConfig.antiCamping.showWarnings && 
+          tracker.frames === GameConfig.antiCamping.warningTime && 
+          tracker.lastWarned < tracker.frames) {
         displayAlert('⚠️ Warning: Stop camping or take damage!');
         tracker.lastWarned = tracker.frames;
       }
       
       // Apply camping penalty
-      if (tracker.frames >= CAMPING_TIME_THRESHOLD) {
-        if (tracker.frames % 10 === 0) { // Warn every second
+      if (tracker.frames >= GameConfig.antiCamping.penaltyTime) {
+        if (GameConfig.antiCamping.showWarnings && tracker.frames % 10 === 0) { // Warn every second
           displayAlert('🔥 Camping penalty! Taking damage...');
         }
-        player.health -= CAMPING_PENALTY_DAMAGE;
+        player.health -= GameConfig.antiCamping.damagePerFrame;
         
         if (player.health <= 0) {
           displayAlert("Destroyed by camping penalty!");
