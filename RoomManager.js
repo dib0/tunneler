@@ -24,7 +24,7 @@ class GameRoom {
       maxLives: 3,
       spawnProtection: { enabled: true, duration: 50, showShield: true },
       sanctuaryZones: { enabled: true, showVisuals: true, radius: 60 },
-      antiCamping: { enabled: true, detectionRadius: 80, penaltyTime: 100, damagePerFrame: 0.5 },
+      antiCamping: { enabled: true, detectionRadius: 60, penaltyTime: 100, damagePerFrame: 0.5 },
       aiOpponents: {
         enabled: false,
         count: 0,

@@ -563,6 +563,13 @@ function processEvents() {
       }
 
       console.log('📨 Processing message type:', msg.type);
+      
+      // Special logging for elimination messages
+      if (msg.type == MSG_EXIT) {
+        console.log('🚪 EXIT message for player', msg.id, '- Current opponents before processing:', opponents.length);
+      } else if (msg.type == MSG_LOST) {
+        console.log('💀 LOST message: player', msg.player.id, 'killed by', msg.player.by, '- Current opponents before processing:', opponents.length);
+      }
 
       // Always process these immediately
       if (msg.type == 'MAP_DATA') {
@@ -862,6 +869,7 @@ function processGameMessage(msg) {
       }
     }
   } else if (msg.type == MSG_LOST) {
+    console.log('💀 MSG_LOST received: id=' + msg.player.id + ', by=' + msg.player.by);
     tankDestroyed(msg.player.id, msg.player.by);
     redrawRequest = true;
   } else if (msg.type == MSG_TEXT) {
@@ -891,14 +899,22 @@ function processGameMessage(msg) {
       }
     }
   } else if (msg.type == MSG_EXIT) {
+    console.log('🚪 MSG_EXIT received for player', msg.id);
+    console.log('   opponents.length before:', opponents.length);
+    
     let opp = opponents.get(msg.id);
     if (initialized) {
       displayAlert(((opp && opp.name) ? opp.name : ('Player' + msg.id)) + ' has been eliminated!');
     }
     if (opp) {
+      console.log('   Found opponent:', opp.name, '- removing and adding to wrecks');
       // Add to wrecks before removing so they appear in final rankings
       wrecks.push(opp);
       opponents.remove(opp);
+      console.log('   opponents.length after:', opponents.length);
+    } else {
+      console.log('   ⚠️ Opponent not found in array');
+      console.log('   Current opponents:', opponents.map(o => o.id + ':' + o.name));
     }
     // Check if game should end after player leaves
     checkGameEndCondition();
@@ -959,9 +975,15 @@ function checkHealth() {
 
 // Delete the destroyed tank and dig a large crater.
 function tankDestroyed(id, by) {
+  console.log('💥 tankDestroyed called: id=' + id + ', by=' + by);
+  console.log('   opponents.length before:', opponents.length);
+  
   let victim = opponents.get(id);
   if (victim) {
+    console.log('   Found victim in opponents:', victim.name);
     opponents.remove(victim);
+    console.log('   opponents.length after removal:', opponents.length);
+    
     digCrater(victim.x + Math.floor(TANK_WIDTH / 2), victim.y + Math.floor(TANK_HEIGHT / 2), 4 * TANK_WIDTH + 1, 4 * TANK_HEIGHT + 1);
     wrecks.push(victim);
     playSound(sndLost);
@@ -974,13 +996,20 @@ function tankDestroyed(id, by) {
       displayAlert(victim.name + " self-destructed!");
     } else {
       let winner = opponents.get(by);
-      winner.score++;
-      opponents.set(winner);
-      displayAlert(winner.name + " destroyed " + victim.name + "! " + winner.name + "s score is now: " + winner.score);
+      if (winner) {
+        winner.score++;
+        opponents.set(winner);
+        displayAlert(winner.name + " destroyed " + victim.name + "! " + winner.name + "s score is now: " + winner.score);
+      } else {
+        displayAlert(victim.name + " was destroyed!");
+      }
     }
     
     // Check if game should end
     checkGameEndCondition();
+  } else {
+    console.log('   ⚠️ Victim not found in opponents array (id=' + id + ')');
+    console.log('   Current opponents:', opponents.map(o => o.id + ':' + o.name));
   }
 }
 
@@ -995,6 +1024,12 @@ function restart() {
   if (GameConfig.tank.maxLives > 0 && player.lives <= 0) {
     gameOver();
     return;
+  }
+  
+  // Clear camping trackers on respawn
+  if (typeof campingTrackers !== 'undefined') {
+    console.log('🧹 Clearing', campingTrackers.size, 'camping trackers on respawn');
+    campingTrackers.clear();
   }
   
   player = {
@@ -1044,6 +1079,12 @@ function quitGame() {
 function gameOver() {
   alive = false;
   
+  // Clear camping trackers when eliminated
+  if (typeof campingTrackers !== 'undefined') {
+    console.log('🧹 Clearing', campingTrackers.size, 'camping trackers on elimination');
+    campingTrackers.clear();
+  }
+  
   // Notify server that this player is eliminated
   sendMessage(MSG_EXIT, {id: player.id});
   
@@ -1072,32 +1113,67 @@ function gameOver() {
 }
 
 // Check if only one player remains and end the game
+let gameOverScheduled = false; // Flag to prevent multiple game over schedules
+
 function checkGameEndCondition() {
   // Count alive players (opponents + self if alive)
   const alivePlayers = opponents.length + (alive ? 1 : 0);
   
+  // Build detailed opponent info
+  const opponentDetails = opponents.map(o => ({
+    id: o.id,
+    name: o.name || ('Player' + o.id),
+    score: o.score || 0
+  }));
+  
   console.log('🎯 Checking game end condition:', {
     opponentsCount: opponents.length,
+    opponentDetails: opponentDetails, // NEW: Full opponent details
     playerAlive: alive,
+    playerId: player.id,
+    playerName: player.name,
     totalAlive: alivePlayers,
-    willTrigger: alivePlayers <= 1
+    willTrigger: alivePlayers <= 1,
+    alreadyScheduled: gameOverScheduled
   });
   
   // If only one player left, game is over
-  if (alivePlayers <= 1) {
+  if (alivePlayers <= 1 && !gameOverScheduled) {
+    gameOverScheduled = true; // Prevent multiple schedules
     console.log('✅ Game ending - scheduling game over screen in 2 seconds');
-    setTimeout(() => {
+    console.log('   Event loop will continue running until screen is shown');
+    
+    // Schedule delayed show
+    const timeoutId = setTimeout(() => {
       console.log('⏰ Timeout fired - calling showGameOverScreen');
       showGameOverScreen();
-    }, 2000); // Delay 2 seconds
+    }, 2000);
+    
+    // Also schedule immediate fallback in case timeout fails
+    setTimeout(() => {
+      if (!document.getElementById('gameOverOverlay')) {
+        console.warn('⚠️ FALLBACK: Game over screen not shown after 3 seconds, forcing now');
+        showGameOverScreen();
+      }
+    }, 3000);
+    
+  } else if (alivePlayers <= 1 && gameOverScheduled) {
+    console.log('⏭️  Game over already scheduled, skipping');
   } else {
     console.log('❌ Game continues - still ' + alivePlayers + ' players alive');
+    console.log('   Alive opponents:', opponentDetails.map(o => o.name).join(', '));
   }
 }
 
 // Show game over screen with rankings
 function showGameOverScreen() {
   console.log('📊 showGameOverScreen called');
+  
+  // Stop the event loop FIRST before any other checks
+  if (typeof eventLoopInterval !== 'undefined') {
+    clearInterval(eventLoopInterval);
+    console.log('⏹️  Event loop stopped');
+  }
   
   // Check if overlay already exists (prevent multiple calls)
   if (document.getElementById('gameOverOverlay')) {
@@ -1106,46 +1182,55 @@ function showGameOverScreen() {
   }
   
   try {
-    clearInterval(eventLoopInterval);
-    
     console.log('Building player rankings...');
     
     // Build player rankings - include everyone
     const allPlayers = [];
   
   // Add current player
+  console.log('Adding current player:', player.name, 'alive:', alive, 'score:', player.score);
   allPlayers.push({
     id: player.id,
-    name: player.name,
-    score: player.score,
+    name: player.name || ('Player' + player.id),
+    score: player.score || 0,
     isAlive: alive
   });
   
   // Add all opponents (still in game)
+  console.log('Adding', opponents.length, 'opponents');
   opponents.forEach(opp => {
-    allPlayers.push({
-      id: opp.id,
-      name: opp.name,
-      score: opp.score,
-      isAlive: true // If they're still in opponents array, they're alive
-    });
-  });
-  
-  // Add eliminated players from wrecks (if not already in list)
-  wrecks.forEach(wreck => {
-    // Check if this player is not already in the list
-    if (!allPlayers.find(p => p.id === wreck.id)) {
-      console.log('Adding from wrecks:', wreck.name, 'score:', wreck.score);
+    if (opp && opp.id) {
+      console.log('  - Opponent:', opp.name, 'score:', opp.score);
       allPlayers.push({
-        id: wreck.id,
-        name: wreck.name,
-        score: wreck.score || 0,
-        isAlive: false
+        id: opp.id,
+        name: opp.name || ('Player' + opp.id),
+        score: opp.score || 0,
+        isAlive: true // If they're still in opponents array, they're alive
       });
     }
   });
   
+  // Add eliminated players from wrecks (if not already in list)
+  console.log('Checking', wrecks.length, 'wrecks for eliminated players');
+  wrecks.forEach(wreck => {
+    if (wreck && wreck.id) {
+      // Check if this player is not already in the list
+      if (!allPlayers.find(p => p.id === wreck.id)) {
+        console.log('  - Adding from wrecks:', wreck.name, 'score:', wreck.score);
+        allPlayers.push({
+          id: wreck.id,
+          name: wreck.name || ('Player' + wreck.id),
+          score: wreck.score || 0,
+          isAlive: false
+        });
+      }
+    }
+  });
+  
   console.log('Total players collected:', allPlayers.length);
+  if (allPlayers.length === 0) {
+    throw new Error('No players collected for rankings!');
+  }
   console.log('Players:', allPlayers.map(p => `${p.name} (alive=${p.isAlive}, score=${p.score})`));
   
   // Sort by: alive first, then by score descending

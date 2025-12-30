@@ -207,6 +207,11 @@ function drawSparks() {
 
 // Generate interference when player is low on energy
 function drawStatic() {
+  // Don't show interference if player is dead
+  if (!alive) {
+    return false;
+  }
+  
   if (player.energy < TANK_MAX_ENERGY / 3) {
     if (Math.round(Math.random() * (1 - player.energy / TANK_MAX_ENERGY))) {
       viewportCtx.fillStyle = 'grey';

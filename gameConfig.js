@@ -42,7 +42,7 @@ var GameConfig = {
   // === ANTI-CAMPING SYSTEM ===
   antiCamping: {
     enabled: true,           // Enable/disable camping detection
-    detectionRadius: 80,     // Detection distance from enemy base in pixels
+    detectionRadius: 60,     // Detection distance from enemy base in pixels (matches sanctuary zone)
     warningTime: 50,         // Frames before warning (50 = 5 seconds)
     penaltyTime: 100,        // Frames before damage starts (100 = 10 seconds)
     damagePerFrame: 0.5,     // Health damage per frame while camping
@@ -113,7 +113,7 @@ var GamePresets = {
   classic: {
     spawnProtection: { enabled: true, duration: 50, showShield: true },
     sanctuaryZones: { enabled: true, showVisuals: true, radius: 60 },
-    antiCamping: { enabled: true, detectionRadius: 80, penaltyTime: 100, damagePerFrame: 0.5 }
+    antiCamping: { enabled: true, detectionRadius: 60, penaltyTime: 100, damagePerFrame: 0.5 }
   },
   
   // No protection, pure skill
@@ -136,7 +136,7 @@ var GamePresets = {
   tournament: {
     spawnProtection: { enabled: true, duration: 50, showShield: true },
     sanctuaryZones: { enabled: true, showVisuals: true, radius: 60 },
-    antiCamping: { enabled: true, detectionRadius: 80, penaltyTime: 100, damagePerFrame: 0.5 },
+    antiCamping: { enabled: true, detectionRadius: 60, penaltyTime: 100, damagePerFrame: 0.5 },
     tank: { maxHealth: 10, maxEnergy: 1000 }
   },
   

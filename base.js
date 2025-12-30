@@ -44,10 +44,15 @@ function isInOwnSanctuary() {
 // Detect and penalize camping behavior
 function updateCampingDetection() {
   if (!GameConfig.antiCamping.enabled) {
-    return; // Anti-camping disabled
+    if (campingTrackers.size > 0) {
+      console.log('Anti-camping disabled, clearing', campingTrackers.size, 'trackers');
+      campingTrackers.clear();
+    }
+    return;
   }
   
-  let isCamping = false;
+  const activeBases = new Set(); // Track which bases player is currently camping
+  let foundCampingBase = false;
   
   // Check if player is near any enemy base
   for (const base of bases) {
@@ -63,10 +68,12 @@ function updateCampingDetection() {
     const distance = Math.sqrt(dx * dx + dy * dy);
     
     if (distance <= GameConfig.antiCamping.detectionRadius) {
-      isCamping = true;
+      foundCampingBase = true;
       const trackingKey = `${player.id}-${base.id}`;
+      activeBases.add(trackingKey); // Mark this base as currently being camped
       
       if (!campingTrackers.has(trackingKey)) {
+        console.log('🎯 Started camping base', base.id, 'at distance', Math.round(distance));
         campingTrackers.set(trackingKey, {
           baseId: base.id,
           frames: 0,
@@ -76,6 +83,11 @@ function updateCampingDetection() {
       
       const tracker = campingTrackers.get(trackingKey);
       tracker.frames++;
+      
+      // Log occasionally for debugging
+      if (tracker.frames % 50 === 0) {
+        console.log('⏱️ Camping base', base.id, 'for', tracker.frames, 'frames, distance:', Math.round(distance));
+      }
       
       // Warn player at warning threshold
       if (GameConfig.antiCamping.showWarnings && 
@@ -107,9 +119,27 @@ function updateCampingDetection() {
     }
   }
   
-  // Reset camping tracker if not camping
-  if (!isCamping) {
-    campingTrackers.clear();
+  // Remove trackers for bases we're no longer near
+  const trackersToDelete = [];
+  for (const [trackingKey, tracker] of campingTrackers.entries()) {
+    if (!activeBases.has(trackingKey)) {
+      trackersToDelete.push(trackingKey);
+    }
+  }
+  
+  // Delete inactive trackers
+  for (const trackingKey of trackersToDelete) {
+    const tracker = campingTrackers.get(trackingKey);
+    console.log('✅ Left camping zone for base', tracker.baseId, 'after', tracker.frames, 'frames');
+    campingTrackers.delete(trackingKey);
+    if (GameConfig.antiCamping.showWarnings && tracker.frames >= GameConfig.antiCamping.warningTime) {
+      displayAlert('✅ Left camping zone - penalty cleared');
+    }
+  }
+  
+  // Debug log when we have active trackers but found no camping
+  if (campingTrackers.size > 0 && !foundCampingBase) {
+    console.log('⚠️ WARNING: Have', campingTrackers.size, 'trackers but not camping any base!');
   }
 }
 
