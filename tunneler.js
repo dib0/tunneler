@@ -495,7 +495,7 @@ function resizeViewport() {
   }
 }
 
-function initGameState(id) {
+function initGameState(id, name) {
   // Reset base manager for new game
   if (typeof resetBaseManager !== 'undefined') {
     resetBaseManager();
@@ -518,7 +518,7 @@ function initGameState(id) {
     energy: TANK_MAX_ENERGY, 
     health: TANK_MAX_HEALTH, 
     score: TANK_INIT_SCORE, 
-    name: 'Player' + id,
+    name: name || ('Player' + id),  // Use provided name or fallback to default
     lives: GameConfig.tank.maxLives
   };
   centerLensOnPlayer();
@@ -584,8 +584,8 @@ function processEvents() {
           console.log('Canvas not ready, storing INIT message for later, ID:', msg.id);
           pendingInitMessage = msg;
         } else {
-          console.log('🎮 Processing INIT message immediately, ID:', msg.id);
-          initGameState(msg.id);
+          console.log('🎮 Processing INIT message immediately, ID:', msg.id, 'Name:', msg.name);
+          initGameState(msg.id, msg.name);
           redrawRequest = true;
         }
       // Queue other messages if canvas isn't ready
@@ -601,8 +601,8 @@ function processEvents() {
 
   // Process pending INIT and then all queued messages
   if (pendingInitMessage && viewport && viewportCtx && buffer) {
-    console.log('🎮 Processing pending INIT message, ID:', pendingInitMessage.id);
-    initGameState(pendingInitMessage.id);
+    console.log('🎮 Processing pending INIT message, ID:', pendingInitMessage.id, 'Name:', pendingInitMessage.name);
+    initGameState(pendingInitMessage.id, pendingInitMessage.name);
     pendingInitMessage = null;
     
     // Set flag to prevent processing new incoming messages during queue processing
@@ -827,15 +827,25 @@ function processGameMessage(msg) {
       chatReceived(msg.message.name, msg.message.text);
     }
   } else if (msg.type == MSG_NAME) {
-    if (initialized) {
-      displayAlert('Player' + msg.player.id + ' is now known as: ' + msg.player.name);
-    }
-    let opp = opponents.get(msg.player.id);
-    if (opp) {
-      opp.name = msg.player.name;
-      opponents.set(opp);
-      if (onScreen && onScreen(msg.player.id)) {
-        redrawRequest = true;
+    // Check if this is our own name update
+    if (msg.player.id == player.id) {
+      player.name = msg.player.name;
+      console.log('Updated own player name to:', player.name);
+      if (initialized) {
+        displayAlert('Your name is now: ' + msg.player.name);
+      }
+    } else {
+      // Update opponent name
+      if (initialized) {
+        displayAlert('Player' + msg.player.id + ' is now known as: ' + msg.player.name);
+      }
+      let opp = opponents.get(msg.player.id);
+      if (opp) {
+        opp.name = msg.player.name;
+        opponents.set(opp);
+        if (onScreen && onScreen(msg.player.id)) {
+          redrawRequest = true;
+        }
       }
     }
   } else if (msg.type == MSG_EXIT) {

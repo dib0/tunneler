@@ -91,9 +91,9 @@ wss.on('request', function(request) {
 
 // Handle game connection from client
 function handleGameConnect(ws, message) {
-  const { roomCode, playerId } = message;
+  const { roomCode, playerId, playerName } = message;
   
-  console.log(`🎮 Game connection request - Room: ${roomCode}, Player: ${playerId}`);
+  console.log(`🎮 Game connection request - Room: ${roomCode}, Player: ${playerId}, Name: ${playerName}`);
   
   const room = roomManager.getRoom(roomCode);
   if (!room) {
@@ -109,12 +109,18 @@ function handleGameConnect(ws, message) {
   }
   
   // Check if player exists in room
-  const playerObj = room.players.get(playerId);
+  let playerObj = room.players.get(playerId);
   if (!playerObj) {
     console.error(`❌ Player ${playerId} not found in room ${roomCode}`);
     console.error(`   Available players:`, Array.from(room.players.keys()));
     sendError(ws, `Player ${playerId} not found in room`);
     return;
+  }
+  
+  // Update player's name if provided
+  if (playerName && playerName !== 'undefined' && playerName !== 'null') {
+    playerObj.playerData.name = playerName;
+    console.log(`   Updated player name to: ${playerName}`);
   }
   
   // Update player's WebSocket connection
@@ -420,11 +426,8 @@ function initializePlayerInGame(ws, playerId, room) {
     ws.sendUTF('S ' + room.mapSeed);
   }
   
-  // Send INIT message with player ID
-  ws.sendUTF('I ' + playerId);
-  
-  // Send player's name so game can use it
-  ws.sendUTF(`N ${playerId} ${btoa(playerName)}`);
+  // Send INIT message with player ID and name
+  ws.sendUTF(`I ${playerId} ${btoa(playerName)}`);
   
   console.log(`✅ Game initialized for player ${playerId} (${playerName})`);
 }
@@ -444,43 +447,61 @@ function initializeAIPlayers(room) {
       aiPlayerConfig.personality
     );
     
-    // Set initial position (will be set properly when base is assigned)
-    aiPlayer.x = 100 + (index * 50);
-    aiPlayer.y = 100 + (index * 50);
+    // Set initial position for base (spread them out)
+    const mapWidth = room.mapData?.width || 1200;
+    const mapHeight = room.mapData?.height || 600;
+    const baseSpacing = mapWidth / (aiConfig.count + room.players.size + 1);
+    
+    aiPlayer.x = baseSpacing * (room.players.size + index + 1) + 5;
+    aiPlayer.y = mapHeight / 2 + (index % 2 === 0 ? 100 : -100);
+    
+    // Assign a base for the AI player
+    const baseX = Math.floor(aiPlayer.x - 20);
+    const baseY = Math.floor(aiPlayer.y - 20);
+    const baseMsg = `B ${aiId} ${baseX} ${baseY} 40 40`;
     
     room.aiPlayers.push(aiPlayer);
     
     // Add AI to trace so new players see them
     const joinMsg = 'J ' + aiId;
     const nameMsg = `N ${aiId} ${btoa(aiPlayer.name)}`;
+    const moveMsg = `M ${aiId} ${Math.floor(aiPlayer.x)} ${Math.floor(aiPlayer.y)} 2 1000 10 0 ${btoa(aiPlayer.name)} ${aiPlayer.lives}`;
     
     room.addToTrace(joinMsg);
     room.addToTrace(nameMsg);
+    room.addToTrace(baseMsg);
+    room.addToTrace(moveMsg);
     
-    console.log(`🤖 AI Player ${aiPlayer.name} (ID: ${aiId}) added to room ${room.roomCode}`);
+    console.log(`🤖 AI Player ${aiPlayer.name} (ID: ${aiId}) added at (${Math.floor(aiPlayer.x)}, ${Math.floor(aiPlayer.y)}) with base at (${baseX}, ${baseY})`);
   });
   
   // Broadcast AI join messages to all human players currently connected
   room.aiPlayers.forEach(ai => {
     const joinMsg = 'J ' + ai.id;
     const nameMsg = `N ${ai.id} ${btoa(ai.name)}`;
+    const baseX = Math.floor(ai.x - 20);
+    const baseY = Math.floor(ai.y - 20);
+    const baseMsg = `B ${ai.id} ${baseX} ${baseY} 40 40`;
+    const moveMsg = `M ${ai.id} ${Math.floor(ai.x)} ${Math.floor(ai.y)} 2 1000 10 0 ${btoa(ai.name)} ${ai.lives}`;
     
     room.players.forEach((playerObj, playerId) => {
       if (playerObj.ws && playerObj.ws.connected) {
         playerObj.ws.sendUTF(joinMsg);
         playerObj.ws.sendUTF(nameMsg);
+        playerObj.ws.sendUTF(baseMsg);
+        playerObj.ws.sendUTF(moveMsg);
       }
     });
   });
   
-  console.log(`✅ ${room.aiPlayers.length} AI players initialized for room ${room.roomCode}`);
+  console.log(`✅ ${room.aiPlayers.length} AI players initialized with bases for room ${room.roomCode}`);
 }
 
 // Process AI player actions
 function processAIPlayers(room) {
-  if (!room.gameStarted) return;
+  if (!room.gameStarted || room.aiPlayers.length === 0) return;
   
-  // Collect game state for AI
+  // Collect actual game state for AI
   const gameState = {
     players: [],
     bases: [],
@@ -488,11 +509,51 @@ function processAIPlayers(room) {
     mapHeight: room.mapData?.height || 600
   };
   
-  // Add human players
+  // Add human players to game state
   room.players.forEach((playerObj, playerId) => {
+    // Note: We don't have real-time player positions here
+    // In a full implementation, you'd track this from MSG_MOVE
     gameState.players.push({
       id: playerId,
-      // Additional player state would come from game messages
+      x: 0, // Would come from tracked state
+      y: 0,
+      health: 10,
+      energy: 1000,
+      isAI: false
+    });
+  });
+  
+  // Add AI players to game state
+  room.aiPlayers.forEach(ai => {
+    gameState.players.push({
+      id: ai.id,
+      x: ai.x,
+      y: ai.y,
+      health: ai.health,
+      energy: ai.energy,
+      isAI: true
+    });
+  });
+  
+  // Add bases to game state
+  gameState.bases = Array.from(room.players.keys()).map(id => ({
+    id: id,
+    x: 0, // Would come from tracked state
+    y: 0,
+    w: 40,
+    h: 40
+  }));
+  
+  room.aiPlayers.forEach(ai => {
+    // Calculate AI base position
+    const baseX = Math.floor(ai.x - 20);
+    const baseY = Math.floor(ai.y - 20);
+    gameState.bases.push({
+      id: ai.id,
+      x: baseX,
+      y: baseY,
+      w: 40,
+      h: 40
     });
   });
   
@@ -504,17 +565,42 @@ function processAIPlayers(room) {
       let message = '';
       
       if (action.type === 'move') {
-        message = `M ${ai.id} ${ai.x} ${ai.y} ${ai.dir} ${ai.energy} ${ai.health} ${ai.score} ${btoa(ai.name)} ${ai.lives}`;
+        // Update AI position based on direction
+        let dx = 0, dy = 0;
+        const dir = action.dir || ai.dir;
+        
+        if ([9, 6, 3].includes(dir)) dx = 1;
+        if ([1, 2, 3].includes(dir)) dy = 1;
+        if ([7, 4, 1].includes(dir)) dx = -1;
+        if ([9, 8, 7].includes(dir)) dy = -1;
+        
+        ai.x = Math.max(10, Math.min(1190, ai.x + dx));
+        ai.y = Math.max(10, Math.min(590, ai.y + dy));
+        ai.dir = dir;
+        
+        message = `M ${ai.id} ${Math.floor(ai.x)} ${Math.floor(ai.y)} ${ai.dir} ${ai.energy} ${ai.health} ${ai.score} ${btoa(ai.name)} ${ai.lives}`;
         room.broadcastToRoom(message);
         room.addToTrace(message);
       } else if (action.type === 'fire') {
         message = `F ${ai.id}`;
         room.broadcastToRoom(message);
         room.addToTrace(message);
+      } else if (action.type === 'dig') {
+        // AI is digging - consume energy
+        ai.energy = Math.max(0, ai.energy - 1);
       }
     });
   });
 }
+
+// Start AI processing loop for all rooms
+setInterval(() => {
+  roomManager.rooms.forEach((room, roomCode) => {
+    if (room.gameStarted && room.aiPlayers.length > 0) {
+      processAIPlayers(room);
+    }
+  });
+}, 200); // Process AI every 200ms
 
 // Handle disconnect
 function handleDisconnect(ws) {

@@ -7,6 +7,7 @@ let socket = null;
 let currentRoom = null;
 let isHost = false;
 let playerId = null;
+let playerName = null; // Track player's name
 
 // Game configuration presets
 const gamePresets = {
@@ -215,6 +216,7 @@ function updateAIDifficulty(index, difficulty) {
 // Create room
 function createRoom() {
   const hostName = document.getElementById('hostName').value.trim() || 'Player';
+  playerName = hostName; // Store player name
   
   const config = {
     maxPlayers: parseInt(document.getElementById('maxPlayers').value),
@@ -256,7 +258,8 @@ function createRoom() {
 
 // Join room
 function joinRoom() {
-  const playerName = document.getElementById('playerName').value.trim() || 'Player';
+  const enteredPlayerName = document.getElementById('playerName').value.trim() || 'Player';
+  playerName = enteredPlayerName; // Store player name
   const roomCode = document.getElementById('roomCodeInput').value.trim().toUpperCase();
   
   if (roomCode.length !== 6) {
@@ -266,7 +269,7 @@ function joinRoom() {
   
   sendToServer({
     type: 'JOIN_ROOM',
-    playerName: playerName,
+    playerName: enteredPlayerName,
     roomCode: roomCode
   });
 }
@@ -279,6 +282,7 @@ function leaveRoom() {
   
   currentRoom = null;
   isHost = false;
+  playerName = null; // Clear player name
   showMainMenu();
 }
 
@@ -332,9 +336,16 @@ function handleConfigUpdated(message) {
 function handleGameStarting(message) {
   showMessage('Game starting...');
   
-  // Store room code and redirect to game
+  // Store room code, player ID, and player name for game connection
   sessionStorage.setItem('roomCode', currentRoom);
   sessionStorage.setItem('playerId', playerId);
+  sessionStorage.setItem('playerName', playerName);
+  
+  console.log('Stored for game:', {
+    roomCode: currentRoom,
+    playerId: playerId,
+    playerName: playerName
+  });
   
   // DON'T send LEAVE_ROOM - just disconnect the websocket
   // The player stays in the room and will reconnect from game page

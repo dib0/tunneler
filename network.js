@@ -66,14 +66,16 @@ function connect() {
     // Send room code if this is a game connection
     const roomCode = sessionStorage.getItem('roomCode');
     const playerId = sessionStorage.getItem('playerId');
+    const playerName = sessionStorage.getItem('playerName');
     
     if (roomCode && playerId) {
-      console.log('🎮 Joining game room:', roomCode, 'as player:', playerId);
-      // Send GAME_CONNECT message with room code and player ID
+      console.log('🎮 Joining game room:', roomCode, 'as player:', playerId, 'with name:', playerName);
+      // Send GAME_CONNECT message with room code, player ID, and name
       socket.send(JSON.stringify({
         type: 'GAME_CONNECT',
         roomCode: roomCode,
-        playerId: parseInt(playerId)
+        playerId: parseInt(playerId),
+        playerName: playerName || 'Player ' + playerId
       }));
     }
 
@@ -142,7 +144,7 @@ function getMessage() {
         return null;
       }
     } else if (action == MSG_INIT) {
-      return {type: MSG_INIT, id: arr[1]};
+      return {type: MSG_INIT, id: arr[1], name: arr[2] ? atob(arr[2]) : null};
     } else if (action == MSG_JOIN) {
       return {type: MSG_JOIN, id: arr[1]};
     } else if (action == MSG_MOVE) {
