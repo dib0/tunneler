@@ -226,15 +226,33 @@ function handleJoinRoom(ws, message) {
     return;
   }
   
-  if (room.gameStarted) {
-    sendError(ws, 'Game already started');
-    return;
-  }
-  
+  // Allow joining even if game started (late join)
   const playerId = room.addPlayer(ws, message.playerName);
   connectionToPlayer.set(ws, { playerId, roomCode: room.roomCode });
   
-  // Send join confirmation to joining player
+  // If game already started, send player directly to game
+  if (room.gameStarted) {
+    console.log(`🔄 Late join: Player ${playerId} (${message.playerName}) joining game in progress for room ${room.roomCode}`);
+    
+    // Send GAME_STARTING to redirect player to game page
+    sendJSON(ws, {
+      type: 'GAME_STARTING',
+      roomCode: room.roomCode,
+      playerId: playerId
+    });
+    
+    // Notify other players in the game
+    const joinMsg = `J ${playerId}`;
+    const nameMsg = `N ${playerId} ${btoa(message.playerName)}`;
+    room.broadcastToRoom(joinMsg, playerId);
+    room.broadcastToRoom(nameMsg, playerId);
+    room.addToTrace(joinMsg);
+    room.addToTrace(nameMsg);
+    
+    return; // Don't send lobby confirmation
+  }
+  
+  // Game not started - send lobby confirmation
   sendJSON(ws, {
     type: 'ROOM_JOINED',
     roomCode: room.roomCode,
@@ -242,7 +260,7 @@ function handleJoinRoom(ws, message) {
     room: getRoomData(room)
   });
   
-  // Notify other players
+  // Notify other players in lobby
   room.broadcastToRoom(JSON.stringify({
     type: 'PLAYER_JOINED',
     playerId: playerId,

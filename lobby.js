@@ -336,15 +336,20 @@ function handleConfigUpdated(message) {
 function handleGameStarting(message) {
   showMessage('Game starting...');
   
+  // Use data from message if available (for late joiners), otherwise use globals
+  const roomCode = message.roomCode || currentRoom;
+  const playerIdToUse = message.playerId || playerId;
+  const playerNameToUse = playerName; // playerName should already be set from join
+  
   // Store room code, player ID, and player name for game connection
-  sessionStorage.setItem('roomCode', currentRoom);
-  sessionStorage.setItem('playerId', playerId);
-  sessionStorage.setItem('playerName', playerName);
+  sessionStorage.setItem('roomCode', roomCode);
+  sessionStorage.setItem('playerId', playerIdToUse);
+  sessionStorage.setItem('playerName', playerNameToUse);
   
   console.log('Stored for game:', {
-    roomCode: currentRoom,
-    playerId: playerId,
-    playerName: playerName
+    roomCode: roomCode,
+    playerId: playerIdToUse,
+    playerName: playerNameToUse
   });
   
   // DON'T send LEAVE_ROOM - just disconnect the websocket
@@ -356,7 +361,7 @@ function handleGameStarting(message) {
   }
   
   setTimeout(() => {
-    window.location.href = `/index.html?room=${currentRoom}`;
+    window.location.href = `/index.html?room=${roomCode}`;
   }, 1000);
 }
 
