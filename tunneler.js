@@ -893,11 +893,13 @@ function processGameMessage(msg) {
   } else if (msg.type == MSG_EXIT) {
     let opp = opponents.get(msg.id);
     if (initialized) {
-      displayAlert(((opp && opp.name) ? opp.name : ('Player' + msg.id)) + ' has left the game!');
+      displayAlert(((opp && opp.name) ? opp.name : ('Player' + msg.id)) + ' has been eliminated!');
     }
     if (opp) {
       opponents.remove(opp);
     }
+    // Check if game should end after player leaves
+    checkGameEndCondition();
   }
 }
 
@@ -974,6 +976,9 @@ function tankDestroyed(id, by) {
       opponents.set(winner);
       displayAlert(winner.name + " destroyed " + victim.name + "! " + winner.name + "s score is now: " + winner.score);
     }
+    
+    // Check if game should end
+    checkGameEndCondition();
   }
 }
 
@@ -1036,27 +1041,232 @@ function quitGame() {
 // Handle game over when player runs out of lives
 function gameOver() {
   alive = false;
-  clearInterval(eventLoopInterval);
   
-  // Show game over message
+  // Notify server that this player is eliminated
+  sendMessage(MSG_EXIT, {id: player.id});
+  
+  // Show eliminated message
   displayAlert('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  displayAlert('💀 GAME OVER 💀');
+  displayAlert('💀 ELIMINATED 💀');
   displayAlert('You ran out of lives!');
   displayAlert('Final Score: ' + player.score);
   displayAlert('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  displayAlert('Press any key to restart...');
+  displayAlert('Watching remaining players...');
   
-  // Show full map
+  // Show full map for spectating
   viewportCtx.scale(lens.w / MAP_WIDTH, lens.h / MAP_HEIGHT);
   lens.x = 0;
   lens.y = 0;
   redrawScreen();
   
-  // Setup restart on any key
+  // Remove restart ability - player is eliminated
   document.onkeyup = null;
-  document.onkeydown = () => window.location.reload();
-  document.onmousedown = () => window.location.reload();
-  document.ontouchdown = () => window.location.reload();
+  document.onkeydown = null;
+  document.onmousedown = null;
+  document.ontouchdown = null;
+  
+  // Check if game should end (only one player left)
+  checkGameEndCondition();
+}
+
+// Check if only one player remains and end the game
+function checkGameEndCondition() {
+  // Count alive players (opponents + self if alive)
+  const alivePlayers = opponents.length + (alive ? 1 : 0);
+  
+  // If only one player left, game is over
+  if (alivePlayers <= 1) {
+    setTimeout(() => showGameOverScreen(), 2000); // Delay 2 seconds
+  }
+}
+
+// Show game over screen with rankings
+function showGameOverScreen() {
+  clearInterval(eventLoopInterval);
+  
+  // Build player rankings - include everyone
+  const allPlayers = [];
+  
+  // Add current player
+  allPlayers.push({
+    id: player.id,
+    name: player.name,
+    score: player.score,
+    isAlive: alive
+  });
+  
+  // Add all opponents (still in game)
+  opponents.forEach(opp => {
+    allPlayers.push({
+      id: opp.id,
+      name: opp.name,
+      score: opp.score,
+      isAlive: true // If they're still in opponents array, they're alive
+    });
+  });
+  
+  // Add eliminated players from wrecks (if not already in list)
+  wrecks.forEach(wreck => {
+    // Check if this player is not already in the list
+    if (!allPlayers.find(p => p.id === wreck.id)) {
+      allPlayers.push({
+        id: wreck.id,
+        name: wreck.name,
+        score: wreck.score || 0,
+        isAlive: false
+      });
+    }
+  });
+  
+  // Sort by: alive first, then by score descending
+  allPlayers.sort((a, b) => {
+    if (a.isAlive !== b.isAlive) return b.isAlive - a.isAlive; // Alive players first
+    return b.score - a.score; // Then by score
+  });
+  
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'gameOverOverlay';
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    font-family: 'Lucida Console', monospace;
+    color: white;
+  `;
+  
+  // Create content box
+  const content = document.createElement('div');
+  content.style.cssText = `
+    background: #222;
+    border: 10px solid;
+    border-color: #aaa #444 #444 #aaa;
+    padding: 40px;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 0 50px rgba(0, 255, 0, 0.5);
+  `;
+  
+  // Title
+  const title = document.createElement('h1');
+  title.textContent = '🏆 GAME OVER 🏆';
+  title.style.cssText = `
+    color: #ffff00;
+    text-align: center;
+    font-size: 32px;
+    margin: 0 0 30px 0;
+    text-shadow: 2px 2px 4px #000;
+  `;
+  content.appendChild(title);
+  
+  // Rankings
+  const rankingsTitle = document.createElement('h2');
+  rankingsTitle.textContent = 'FINAL RANKINGS';
+  rankingsTitle.style.cssText = `
+    color: #00ffff;
+    text-align: center;
+    font-size: 20px;
+    margin: 0 0 20px 0;
+    border-bottom: 2px solid #00ffff;
+    padding-bottom: 10px;
+  `;
+  content.appendChild(rankingsTitle);
+  
+  // Player list
+  const playerList = document.createElement('div');
+  playerList.style.cssText = 'margin: 20px 0;';
+  
+  allPlayers.forEach((p, index) => {
+    const playerDiv = document.createElement('div');
+    playerDiv.style.cssText = `
+      background: ${index === 0 ? '#003300' : '#1a1a1a'};
+      border-left: 4px solid ${index === 0 ? '#00ff00' : p.isAlive ? '#ffff00' : '#666'};
+      padding: 15px;
+      margin: 10px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    `;
+    
+    const leftSide = document.createElement('div');
+    const rank = index + 1;
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+    const status = p.isAlive ? '👑 WINNER' : '💀 Eliminated';
+    
+    leftSide.innerHTML = `
+      <div style="font-size: 20px; font-weight: bold; color: ${index === 0 ? '#00ff00' : '#fff'};">
+        ${medal} ${p.name}
+      </div>
+      <div style="font-size: 12px; color: ${p.isAlive ? '#00ff00' : '#888'}; margin-top: 5px;">
+        ${status}
+      </div>
+    `;
+    
+    const rightSide = document.createElement('div');
+    rightSide.style.cssText = 'text-align: right;';
+    rightSide.innerHTML = `
+      <div style="font-size: 24px; font-weight: bold; color: ${index === 0 ? '#ffff00' : '#fff'};">
+        ${p.score}
+      </div>
+      <div style="font-size: 12px; color: #888;">
+        kills
+      </div>
+    `;
+    
+    playerDiv.appendChild(leftSide);
+    playerDiv.appendChild(rightSide);
+    playerList.appendChild(playerDiv);
+  });
+  
+  content.appendChild(playerList);
+  
+  // Buttons container
+  const buttonsDiv = document.createElement('div');
+  buttonsDiv.style.cssText = `
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 30px;
+  `;
+  
+  // Return to Lobby button
+  const lobbyButton = document.createElement('button');
+  lobbyButton.textContent = 'Return to Lobby';
+  lobbyButton.style.cssText = `
+    background: #888;
+    border: 5px solid;
+    border-color: #aaa #444 #444 #aaa;
+    color: #fff;
+    padding: 15px 30px;
+    font-size: 16px;
+    font-family: 'Lucida Console', monospace;
+    font-weight: bold;
+    cursor: pointer;
+  `;
+  lobbyButton.onmouseover = () => {
+    lobbyButton.style.background = '#999';
+    lobbyButton.style.transform = 'translateY(-2px)';
+  };
+  lobbyButton.onmouseout = () => {
+    lobbyButton.style.background = '#888';
+    lobbyButton.style.transform = 'translateY(0)';
+  };
+  lobbyButton.onclick = () => {
+    window.location.href = '/lobby.html';
+  };
+  
+  buttonsDiv.appendChild(lobbyButton);
+  content.appendChild(buttonsDiv);
+  
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
 }
 
 // Update the lives display in the UI
