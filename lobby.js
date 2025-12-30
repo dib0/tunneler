@@ -174,19 +174,49 @@ function applyPreset(presetName) {
   document.getElementById('spawnProtectionEnabled').checked = preset.spawnProtectionEnabled;
   document.getElementById('sanctuaryZonesEnabled').checked = preset.sanctuaryZonesEnabled;
   document.getElementById('antiCampingEnabled').checked = preset.antiCampingEnabled;
-  document.getElementById('aiCount').value = preset.aiCount;
-  document.getElementById('aiDifficulty').value = preset.aiDifficulty;
   
-  updateAISettings();
+  // AI settings hidden - skip setting AI values
+  const aiCountElement = document.getElementById('aiCount');
+  const aiDifficultyElement = document.getElementById('aiDifficulty');
+  if (aiCountElement && aiDifficultyElement) {
+    aiCountElement.value = preset.aiCount;
+    aiDifficultyElement.value = preset.aiDifficulty;
+    updateAISettings();
+  }
   
   showMessage(`Applied ${presetName} preset!`);
 }
 
 // Update AI configuration UI
 function updateAISettings() {
-  const aiCount = parseInt(document.getElementById('aiCount').value);
+  // AI settings temporarily disabled - check if elements exist
+  const aiCountInput = document.getElementById('aiCount');
   const aiConfigPanel = document.getElementById('aiPlayerConfig');
+  
+  if (!aiCountInput || !aiConfigPanel) {
+    console.log('AI settings hidden - skipping update');
+    return; // Elements don't exist, AI is disabled
+  }
+  
+  const aiCount = parseInt(aiCountInput.value);
+  const maxPlayers = parseInt(document.getElementById('maxPlayers').value);
   const aiPlayerList = document.getElementById('aiPlayerList');
+  
+  // Get current player count from player list
+  const playerListItems = document.querySelectorAll('.player-item');
+  const humanPlayerCount = playerListItems.length;
+  
+  // Validate: human players + AI players must not exceed max players
+  const totalPlayers = humanPlayerCount + aiCount;
+  if (totalPlayers > maxPlayers) {
+    // Adjust AI count to fit
+    const maxAI = maxPlayers - humanPlayerCount;
+    aiCountInput.value = Math.max(0, maxAI);
+    alert(`Cannot add ${aiCount} AI players. Maximum ${maxPlayers} total players.\nWith ${humanPlayerCount} human player(s), you can add up to ${maxAI} AI player(s).`);
+    // Recursively call with corrected value
+    updateAISettings();
+    return;
+  }
   
   if (aiCount > 0) {
     aiConfigPanel.classList.remove('hidden');
@@ -236,23 +266,14 @@ function createRoom() {
       enabled: document.getElementById('antiCampingEnabled').checked
     },
     aiOpponents: {
-      enabled: parseInt(document.getElementById('aiCount').value) > 0,
-      count: parseInt(document.getElementById('aiCount').value),
-      difficulty: document.getElementById('aiDifficulty').value,
+      enabled: false, // AI disabled
+      count: 0,
+      difficulty: 'normal',
       aiPlayers: []
     }
   };
   
-  // Add AI player configurations
-  const aiCount = config.aiOpponents.count;
-  for (let i = 0; i < aiCount; i++) {
-    const aiPlayer = aiPersonalities[i % aiPersonalities.length];
-    config.aiOpponents.aiPlayers.push({
-      name: aiPlayer.name,
-      personality: aiPlayer.personality,
-      difficulty: config.aiOpponents.difficulty
-    });
-  }
+  // Note: AI configuration removed - aiOpponents always disabled
   
   sendToServer({
     type: 'CREATE_ROOM',
