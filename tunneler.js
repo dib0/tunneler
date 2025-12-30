@@ -899,23 +899,29 @@ function processGameMessage(msg) {
       }
     }
   } else if (msg.type == MSG_EXIT) {
-    console.log('🚪 MSG_EXIT received for player', msg.id);
-    console.log('   opponents.length before:', opponents.length);
+    console.log('═══════════════════════════════════════');
+    console.log('🚪 MSG_EXIT RECEIVED for player', msg.id);
+    console.log('   My player ID:', player.id, 'My name:', player.name);
+    console.log('   opponents.length BEFORE:', opponents.length);
+    console.log('   Opponents BEFORE:', opponents.map(o => o.id + ':' + o.name));
+    console.log('═══════════════════════════════════════');
     
     let opp = opponents.get(msg.id);
     if (initialized) {
       displayAlert(((opp && opp.name) ? opp.name : ('Player' + msg.id)) + ' has been eliminated!');
     }
     if (opp) {
-      console.log('   Found opponent:', opp.name, '- removing and adding to wrecks');
+      console.log('   ✓ Found opponent:', opp.name, '- removing and adding to wrecks');
       // Add to wrecks before removing so they appear in final rankings
       wrecks.push(opp);
       opponents.remove(opp);
-      console.log('   opponents.length after:', opponents.length);
+      console.log('   opponents.length AFTER:', opponents.length);
+      console.log('   Opponents AFTER:', opponents.map(o => o.id + ':' + o.name));
     } else {
-      console.log('   ⚠️ Opponent not found in array');
+      console.log('   ⚠️ Opponent not found in array!');
       console.log('   Current opponents:', opponents.map(o => o.id + ':' + o.name));
     }
+    console.log('═══════════════════════════════════════');
     // Check if game should end after player leaves
     checkGameEndCondition();
   }
@@ -1086,7 +1092,9 @@ function gameOver() {
   }
   
   // Notify server that this player is eliminated
+  console.log('📤 Sending MSG_EXIT for player', player.id, player.name);
   sendMessage(MSG_EXIT, {id: player.id});
+  console.log('✅ MSG_EXIT sent successfully');
   
   // Show eliminated message
   displayAlert('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

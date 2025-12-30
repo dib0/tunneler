@@ -198,8 +198,11 @@ function sendMessage(action, data) {
     msg = MSG_TEXT + " " + btoa(data.name) + " " + btoa(data.text);
   } else if (action == MSG_NAME) {
     msg = MSG_NAME + " " + data.id + " " + btoa(data.name);
+  } else if (action == MSG_EXIT) {
+    msg = MSG_EXIT + " " + data.id;
   }
   // console.log("> " + msg);
+  console.log("📤 Sending message:", action, msg); // Log all sent messages
   if (connected) {
     socket.send(msg);
   } else {
