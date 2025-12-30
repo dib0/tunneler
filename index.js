@@ -444,7 +444,16 @@ function initializePlayerInGame(ws, playerId, room) {
     ws.sendUTF('S ' + room.mapSeed);
   }
   
-  // Send INIT message with player ID and name
+  // Send game configuration FIRST so client has correct settings before initializing
+  const configMessage = 'C ' + JSON.stringify({
+    maxLives: room.config.maxLives,
+    spawnProtection: room.config.spawnProtection,
+    sanctuaryZones: room.config.sanctuaryZones,
+    antiCamping: room.config.antiCamping
+  });
+  ws.sendUTF(configMessage);
+  
+  // Then send INIT message with player ID and name
   ws.sendUTF(`I ${playerId} ${btoa(playerName)}`);
   
   console.log(`✅ Game initialized for player ${playerId} (${playerName})`);

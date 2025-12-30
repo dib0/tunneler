@@ -185,7 +185,9 @@ function impact(b) {
     if (alive && (b.id != player.id) && (victim.id == player.id)) {
         // Check spawn protection
         if (hasSpawnProtection()) {
-          displayAlert('Protected! Spawn protection active');
+          if (GameConfig.spawnProtection.showNotifications) {
+            displayAlert('Protected! Spawn protection active');
+          }
           return true; // Bullet is destroyed but no damage dealt
         }
         

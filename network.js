@@ -30,6 +30,7 @@ const MSG_EXIT = 'X';
 const MSG_MAP_SEED = 'S';
 const MSG_MAP_DATA = 'M';
 const MSG_GAME_CONNECT = 'G'; // NEW: Game connection with room code
+const MSG_CONFIG = 'C'; // NEW: Game configuration from server
 
 // Connection to the server
 let socket;
@@ -132,6 +133,17 @@ function getMessage() {
     
     if (action == MSG_MAP_SEED) {
       return {type: MSG_MAP_SEED, seed: parseInt(arr[1])};
+    } else if (action == MSG_CONFIG) {
+      // Handle config message (JSON format)
+      const configJson = s.substring(2); // Everything after "C "
+      try {
+        const config = JSON.parse(configJson);
+        console.log('Received game config from server:', config);
+        return {type: MSG_CONFIG, config: config};
+      } catch (e) {
+        console.error('Error parsing config:', e);
+        return null;
+      }
     } else if (action == 'M' && s.substring(2, 3) == '{') {
       // Handle map data messages (JSON format)
       const mapDataJson = s.substring(2); // Everything after "M "

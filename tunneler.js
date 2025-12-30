@@ -11,7 +11,7 @@
  * state, ready, reload, bullets, opponents, alive, quit,
  * fgImage, bgImage, shapesImage, mapImage, sndFire1, sndFire2, sndLost,
  * MSG_INIT, MSG_JOIN, MSG_MOVE, MSG_BASE, MSG_DIG, MSG_FIRE, MSG_LOST, MSG_TEXT, MSG_NAME, MSG_EXIT,
- * WAIT_FRAMES_ON_RESTART, MSG_MAP_SEED
+ * WAIT_FRAMES_ON_RESTART, MSG_MAP_SEED, MSG_CONFIG
  */
 
 const MAP_WIDTH = 1200;
@@ -539,7 +539,7 @@ function initGameState(id, name) {
   // Activate spawn protection for new player
   if (typeof activateSpawnProtection !== 'undefined') {
     activateSpawnProtection();
-    if (GameConfig.spawnProtection.showNotifications) {
+    if (GameConfig.spawnProtection.enabled && GameConfig.spawnProtection.showNotifications) {
       displayAlert('🛡️ Spawn protection active for 5 seconds');
     }
   }
@@ -579,6 +579,48 @@ function processEvents() {
           generateRandomMaps(msg.seed);
           redrawRequest = true;
         }
+      } else if (msg.type == MSG_CONFIG) {
+        // Apply game configuration from server
+        console.log('Applying game configuration from server:', msg.config);
+        if (msg.config.maxLives !== undefined) {
+          GameConfig.tank.maxLives = msg.config.maxLives;
+        }
+        if (msg.config.spawnProtection) {
+          GameConfig.spawnProtection.enabled = msg.config.spawnProtection.enabled;
+          if (msg.config.spawnProtection.duration !== undefined) {
+            GameConfig.spawnProtection.duration = msg.config.spawnProtection.duration;
+          }
+          if (msg.config.spawnProtection.showShield !== undefined) {
+            GameConfig.spawnProtection.showShield = msg.config.spawnProtection.showShield;
+          }
+        }
+        if (msg.config.sanctuaryZones) {
+          GameConfig.sanctuaryZones.enabled = msg.config.sanctuaryZones.enabled;
+          if (msg.config.sanctuaryZones.showVisuals !== undefined) {
+            GameConfig.sanctuaryZones.showVisuals = msg.config.sanctuaryZones.showVisuals;
+          }
+          if (msg.config.sanctuaryZones.radius !== undefined) {
+            GameConfig.sanctuaryZones.radius = msg.config.sanctuaryZones.radius;
+          }
+        }
+        if (msg.config.antiCamping) {
+          GameConfig.antiCamping.enabled = msg.config.antiCamping.enabled;
+          if (msg.config.antiCamping.detectionRadius !== undefined) {
+            GameConfig.antiCamping.detectionRadius = msg.config.antiCamping.detectionRadius;
+          }
+          if (msg.config.antiCamping.penaltyTime !== undefined) {
+            GameConfig.antiCamping.penaltyTime = msg.config.antiCamping.penaltyTime;
+          }
+          if (msg.config.antiCamping.damagePerFrame !== undefined) {
+            GameConfig.antiCamping.damagePerFrame = msg.config.antiCamping.damagePerFrame;
+          }
+        }
+        console.log('GameConfig updated:', {
+          spawnProtection: GameConfig.spawnProtection.enabled,
+          sanctuaryZones: GameConfig.sanctuaryZones.enabled,
+          antiCamping: GameConfig.antiCamping.enabled,
+          maxLives: GameConfig.tank.maxLives
+        });
       } else if (msg.type == MSG_INIT) {
         if (!viewport || !viewportCtx || !buffer) {
           console.log('Canvas not ready, storing INIT message for later, ID:', msg.id);
@@ -969,7 +1011,7 @@ function restart() {
   // Activate spawn protection
   if (typeof activateSpawnProtection !== 'undefined') {
     activateSpawnProtection();
-    if (GameConfig.spawnProtection.showNotifications) {
+    if (GameConfig.spawnProtection.enabled && GameConfig.spawnProtection.showNotifications) {
       displayAlert('🛡️ Spawn protection active for 5 seconds');
     }
   }
