@@ -896,6 +896,8 @@ function processGameMessage(msg) {
       displayAlert(((opp && opp.name) ? opp.name : ('Player' + msg.id)) + ' has been eliminated!');
     }
     if (opp) {
+      // Add to wrecks before removing so they appear in final rankings
+      wrecks.push(opp);
       opponents.remove(opp);
     }
     // Check if game should end after player leaves
@@ -1074,18 +1076,42 @@ function checkGameEndCondition() {
   // Count alive players (opponents + self if alive)
   const alivePlayers = opponents.length + (alive ? 1 : 0);
   
+  console.log('🎯 Checking game end condition:', {
+    opponentsCount: opponents.length,
+    playerAlive: alive,
+    totalAlive: alivePlayers,
+    willTrigger: alivePlayers <= 1
+  });
+  
   // If only one player left, game is over
   if (alivePlayers <= 1) {
-    setTimeout(() => showGameOverScreen(), 2000); // Delay 2 seconds
+    console.log('✅ Game ending - scheduling game over screen in 2 seconds');
+    setTimeout(() => {
+      console.log('⏰ Timeout fired - calling showGameOverScreen');
+      showGameOverScreen();
+    }, 2000); // Delay 2 seconds
+  } else {
+    console.log('❌ Game continues - still ' + alivePlayers + ' players alive');
   }
 }
 
 // Show game over screen with rankings
 function showGameOverScreen() {
-  clearInterval(eventLoopInterval);
+  console.log('📊 showGameOverScreen called');
   
-  // Build player rankings - include everyone
-  const allPlayers = [];
+  // Check if overlay already exists (prevent multiple calls)
+  if (document.getElementById('gameOverOverlay')) {
+    console.log('⚠️ Game over screen already showing - skipping');
+    return;
+  }
+  
+  try {
+    clearInterval(eventLoopInterval);
+    
+    console.log('Building player rankings...');
+    
+    // Build player rankings - include everyone
+    const allPlayers = [];
   
   // Add current player
   allPlayers.push({
@@ -1109,6 +1135,7 @@ function showGameOverScreen() {
   wrecks.forEach(wreck => {
     // Check if this player is not already in the list
     if (!allPlayers.find(p => p.id === wreck.id)) {
+      console.log('Adding from wrecks:', wreck.name, 'score:', wreck.score);
       allPlayers.push({
         id: wreck.id,
         name: wreck.name,
@@ -1118,11 +1145,16 @@ function showGameOverScreen() {
     }
   });
   
+  console.log('Total players collected:', allPlayers.length);
+  console.log('Players:', allPlayers.map(p => `${p.name} (alive=${p.isAlive}, score=${p.score})`));
+  
   // Sort by: alive first, then by score descending
   allPlayers.sort((a, b) => {
     if (a.isAlive !== b.isAlive) return b.isAlive - a.isAlive; // Alive players first
     return b.score - a.score; // Then by score
   });
+  
+  console.log('After sorting:', allPlayers.map(p => `${p.name} (alive=${p.isAlive}, score=${p.score})`));
   
   // Create overlay
   const overlay = document.createElement('div');
@@ -1198,13 +1230,14 @@ function showGameOverScreen() {
     const leftSide = document.createElement('div');
     const rank = index + 1;
     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
-    const status = p.isAlive ? '👑 WINNER' : '💀 Eliminated';
+    // Only rank 1 is the winner
+    const status = index === 0 ? '👑 WINNER' : '💀 Eliminated';
     
     leftSide.innerHTML = `
       <div style="font-size: 20px; font-weight: bold; color: ${index === 0 ? '#00ff00' : '#fff'};">
         ${medal} ${p.name}
       </div>
-      <div style="font-size: 12px; color: ${p.isAlive ? '#00ff00' : '#888'}; margin-top: 5px;">
+      <div style="font-size: 12px; color: ${index === 0 ? '#00ff00' : '#888'}; margin-top: 5px;">
         ${status}
       </div>
     `;
@@ -1240,9 +1273,9 @@ function showGameOverScreen() {
   const lobbyButton = document.createElement('button');
   lobbyButton.textContent = 'Return to Lobby';
   lobbyButton.style.cssText = `
-    background: #888;
+    background: #00aa00;
     border: 5px solid;
-    border-color: #aaa #444 #444 #aaa;
+    border-color: #00cc00 #006600 #006600 #00cc00;
     color: #fff;
     padding: 15px 30px;
     font-size: 16px;
@@ -1251,11 +1284,11 @@ function showGameOverScreen() {
     cursor: pointer;
   `;
   lobbyButton.onmouseover = () => {
-    lobbyButton.style.background = '#999';
+    lobbyButton.style.background = '#00cc00';
     lobbyButton.style.transform = 'translateY(-2px)';
   };
   lobbyButton.onmouseout = () => {
-    lobbyButton.style.background = '#888';
+    lobbyButton.style.background = '#00aa00';
     lobbyButton.style.transform = 'translateY(0)';
   };
   lobbyButton.onclick = () => {
@@ -1267,6 +1300,16 @@ function showGameOverScreen() {
   
   overlay.appendChild(content);
   document.body.appendChild(overlay);
+  
+  console.log('✅ Game over screen successfully displayed');
+  console.log('Final rankings:', allPlayers);
+  
+  } catch (error) {
+    console.error('❌ Error showing game over screen:', error);
+    console.error('Stack trace:', error.stack);
+    // Fallback - at least show an alert
+    displayAlert('GAME OVER - Winner: ' + allPlayers[0]?.name);
+  }
 }
 
 // Update the lives display in the UI
