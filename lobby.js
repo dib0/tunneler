@@ -8,6 +8,7 @@ let currentRoom = null;
 let isHost = false;
 let playerId = null;
 let playerName = null; // Track player's name
+let intentionalDisconnect = false; // Track if we're disconnecting on purpose
 
 // Game configuration presets
 const gamePresets = {
@@ -75,7 +76,11 @@ function connectToServer() {
   
   socket.addEventListener('close', () => {
     console.log('Disconnected from server');
-    showError('Disconnected from server');
+    // Only show error if this was NOT an intentional disconnect (like joining game)
+    if (!intentionalDisconnect) {
+      showError('Disconnected from server');
+    }
+    intentionalDisconnect = false; // Reset flag
   });
   
   socket.addEventListener('error', (error) => {
@@ -355,8 +360,9 @@ function handleGameStarting(message) {
   // DON'T send LEAVE_ROOM - just disconnect the websocket
   // The player stays in the room and will reconnect from game page
   if (socket) {
-    // Close without sending leave message
-    socket.onclose = null; // Prevent leave handler
+    // Mark this as an intentional disconnect (joining game)
+    intentionalDisconnect = true;
+    // Close the socket
     socket.close();
   }
   
