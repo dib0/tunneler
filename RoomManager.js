@@ -38,7 +38,8 @@ class GameRoom {
     const playerId = ++this.playerIdCounter;
     this.players.set(playerId, { 
       ws, 
-      playerData: { name }
+      playerData: { name },
+      gameState: null // Will store last known position, health, etc.
     });
     this.lastActivity = Date.now();
     return playerId;
@@ -47,6 +48,18 @@ class GameRoom {
   removePlayer(playerId) {
     this.players.delete(playerId);
     this.lastActivity = Date.now();
+  }
+
+  updatePlayerGameState(playerId, gameState) {
+    const playerObj = this.players.get(playerId);
+    if (playerObj) {
+      playerObj.gameState = gameState;
+    }
+  }
+
+  getPlayerGameState(playerId) {
+    const playerObj = this.players.get(playerId);
+    return playerObj ? playerObj.gameState : null;
   }
 
   getPlayerCount() {

@@ -156,8 +156,8 @@ function randomBaseLocation(id) {
   }
   
   // Improved fallback method with distance checking
-  const MIN_DISTANCE_BETWEEN_BASES = 400; // Match mapgen.js setting
-  const attempts = 400; // More attempts for better placement
+  const MIN_DISTANCE_BETWEEN_BASES = 500; // Increased from 400 for better spacing
+  const attempts = 500; // More attempts for better placement
   
   for (let attempt = 0; attempt < attempts; attempt++) {
     const rect = {
@@ -173,12 +173,19 @@ function randomBaseLocation(id) {
       continue;
     }
     
-    // Check distance from all existing bases
+    // Calculate center of new base
+    const newCenterX = rect.x + BASE_WIDTH / 2;
+    const newCenterY = rect.y + BASE_HEIGHT / 2;
+    
+    // Check distance from all existing bases (using center-to-center distance)
     let tooClose = false;
     for (const existingBase of bases) {
+      const existingCenterX = existingBase.x + BASE_WIDTH / 2;
+      const existingCenterY = existingBase.y + BASE_HEIGHT / 2;
+      
       const distance = Math.sqrt(
-        Math.pow(rect.x - existingBase.x, 2) + 
-        Math.pow(rect.y - existingBase.y, 2)
+        Math.pow(newCenterX - existingCenterX, 2) + 
+        Math.pow(newCenterY - existingCenterY, 2)
       );
       
       if (distance < MIN_DISTANCE_BETWEEN_BASES) {
@@ -188,13 +195,15 @@ function randomBaseLocation(id) {
     }
     
     if (!tooClose) {
-      console.log('Found suitable base location at', rect.x, rect.y, 'after', attempt + 1, 'attempts');
+      console.log('✓ Found suitable base location at', rect.x, rect.y, 'after', attempt + 1, 'attempts');
       return rect;
     }
   }
   
-  // Last resort: just avoid collisions
-  console.warn('Could not find well-spaced base location, using any valid location');
+  // Last resort: just avoid collisions (but still try to maintain some distance)
+  console.warn('⚠️ Could not find well-spaced base location after 500 attempts, using fallback');
+  const FALLBACK_MIN_DISTANCE = 200; // Reduced minimum for fallback
+  
   for (let attempt = 0; attempt < 100; attempt++) {
     const rect = {
       id: id,
@@ -204,12 +213,38 @@ function randomBaseLocation(id) {
       h: BASE_HEIGHT
     };
     
-    if (!collision(rect)) {
+    if (collision(rect)) {
+      continue;
+    }
+    
+    // Still try to maintain some distance in fallback
+    const newCenterX = rect.x + BASE_WIDTH / 2;
+    const newCenterY = rect.y + BASE_HEIGHT / 2;
+    let acceptableDistance = true;
+    
+    for (const existingBase of bases) {
+      const existingCenterX = existingBase.x + BASE_WIDTH / 2;
+      const existingCenterY = existingBase.y + BASE_HEIGHT / 2;
+      const distance = Math.sqrt(
+        Math.pow(newCenterX - existingCenterX, 2) + 
+        Math.pow(newCenterY - existingCenterY, 2)
+      );
+      
+      if (distance < FALLBACK_MIN_DISTANCE) {
+        acceptableDistance = false;
+        break;
+      }
+    }
+    
+    if (acceptableDistance) {
+      console.log('✓ Fallback found acceptable location at', rect.x, rect.y);
       return rect;
     }
   }
   
   // Absolute last resort
+  console.error('❌ Failed to find any suitable base location - using fixed position!');
+  console.error('   Map may be too crowded or terrain too restrictive');
   return {
     id: id,
     x: BASE_WIDTH * 2,

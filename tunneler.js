@@ -827,11 +827,32 @@ function processGameMessage(msg) {
       displayAlert('Player' + msg.id + ' has joined the game!');
     }
   } else if (msg.type == MSG_MOVE) {
-    const before = onScreen(msg.player.id);
-    opponents.set(msg.player);
-    const after = onScreen(msg.player.id);
-    if (before || after) {
+    // Check if this is for our own player (state restoration on reconnect)
+    if (msg.player.id == player.id && initialized) {
+      console.log('🔄 Received MOVE for local player - restoring state:', msg.player);
+      player.x = msg.player.x;
+      player.y = msg.player.y;
+      player.dir = msg.player.dir;
+      player.energy = msg.player.energy;
+      player.health = msg.player.health;
+      player.score = msg.player.score;
+      if (msg.player.name) {
+        player.name = msg.player.name;
+      }
+      if (msg.player.lives !== undefined) {
+        player.lives = msg.player.lives;
+      }
+      centerLensOnPlayer();
+      updateLivesDisplay();
       redrawRequest = true;
+    } else {
+      // Update opponent position
+      const before = onScreen(msg.player.id);
+      opponents.set(msg.player);
+      const after = onScreen(msg.player.id);
+      if (before || after) {
+        redrawRequest = true;
+      }
     }
   } else if (msg.type == MSG_BASE) {
     console.log('Processing BASE message for player', msg.base.id);

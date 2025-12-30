@@ -169,6 +169,25 @@ function handleGameMessage(ws, data) {
   const room = roomManager.getRoom(playerInfo.roomCode);
   if (!room) return;
   
+  // Parse and store MOVE messages to track player state
+  if (data.startsWith('M ')) {
+    const parts = data.split(' ');
+    if (parts.length >= 9) {
+      const playerId = parseInt(parts[1]);
+      const gameState = {
+        x: parseInt(parts[2]),
+        y: parseInt(parts[3]),
+        dir: parseInt(parts[4]),
+        energy: parseInt(parts[5]),
+        health: parseInt(parts[6]),
+        score: parseInt(parts[7]),
+        name: parts[8] ? atob(parts[8]) : null,
+        lives: parts[9] ? parseInt(parts[9]) : 0
+      };
+      room.updatePlayerGameState(playerId, gameState);
+    }
+  }
+  
   // Add to trace
   room.addToTrace(data);
   
@@ -455,6 +474,15 @@ function initializePlayerInGame(ws, playerId, room) {
   
   // Then send INIT message with player ID and name
   ws.sendUTF(`I ${playerId} ${btoa(playerName)}`);
+  
+  // If player has existing game state (reconnecting), send it immediately
+  const gameState = room.getPlayerGameState(playerId);
+  if (gameState) {
+    console.log(`🔄 Player ${playerId} reconnecting - restoring last state:`, gameState);
+    // Send MOVE message with their last known state
+    const moveMsg = `M ${playerId} ${gameState.x} ${gameState.y} ${gameState.dir} ${gameState.energy} ${gameState.health} ${gameState.score} ${btoa(gameState.name || playerName)} ${gameState.lives}`;
+    ws.sendUTF(moveMsg);
+  }
   
   console.log(`✅ Game initialized for player ${playerId} (${playerName})`);
 }
