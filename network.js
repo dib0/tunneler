@@ -42,11 +42,29 @@ let connected = false;
 const inbox = [];
 const outbox = [];
 
+// Detect Firefox
+const isFirefox = typeof InstallTrigger !== 'undefined';
+
 // Connect to server. Push incoming messages on the queue
 function connect() {
   console.log(`Connecting to: ${SERVER_URL}`);
   
+  // FIREFOX FIX: Create WebSocket with explicit configuration
   socket = new WebSocket(SERVER_URL);
+  
+  // FIREFOX FIX: Set binary type explicitly (Firefox requires this)
+  socket.binaryType = 'arraybuffer';
+  
+  // FIREFOX FIX: Add connection timeout handling
+  let connectionTimeout = setTimeout(() => {
+    if (socket.readyState !== WebSocket.OPEN) {
+      console.error('Connection timeout - readyState:', socket.readyState);
+      if (isFirefox) {
+        console.log('Firefox detected - connection may be blocked by security settings');
+      }
+      // Don't close immediately, let Firefox's timeout handle it
+    }
+  }, 15000); // 15 second timeout for Firefox
   
   // Set flag to wait for server map
   if (typeof window !== 'undefined') {
@@ -61,8 +79,19 @@ function connect() {
   });
 
   socket.addEventListener('open', function (event) {
+    clearTimeout(connectionTimeout);
     console.log("Connected to " + SERVER_URL);
     connected = true;
+
+    // FIREFOX FIX: Send a ping right away to confirm connection
+    if (isFirefox) {
+      console.log('Firefox detected - sending initial ping');
+      try {
+        socket.send(JSON.stringify({ type: 'PING', timestamp: Date.now() }));
+      } catch (e) {
+        console.warn('Could not send initial ping:', e);
+      }
+    }
 
     // Send room code if this is a game connection
     const roomCode = sessionStorage.getItem('roomCode');
@@ -88,11 +117,40 @@ function connect() {
   });
 
   socket.addEventListener('close', function (event) {
+    clearTimeout(connectionTimeout);
     connected = false;
+    console.log('WebSocket closed:', event.code, event.reason);
+    
+    // FIREFOX FIX: More detailed close information
+    if (isFirefox) {
+      console.log('Firefox WebSocket close details:', {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean
+      });
+    }
   });
 
   socket.addEventListener('error', function (event) {
+    clearTimeout(connectionTimeout);
     console.error('WebSocket error:', event);
+    console.error('Connection details:', {
+      url: SERVER_URL,
+      readyState: socket.readyState,
+      protocol: location.protocol,
+      isFirefox: isFirefox
+    });
+    
+    // FIREFOX FIX: Provide helpful error messages
+    if (isFirefox && socket.readyState === WebSocket.CONNECTING) {
+      console.error('Firefox specific issue: Connection attempt failed');
+      console.error('Possible causes:');
+      console.error('1. SSL certificate issue (check certificate validity)');
+      console.error('2. Mixed content (ensure page and WebSocket use same protocol)');
+      console.error('3. CORS headers missing on server');
+      console.error('4. Server not properly configured for WebSocket upgrades');
+    }
+    
     connected = false;
   });
 }

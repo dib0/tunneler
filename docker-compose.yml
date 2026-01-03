@@ -7,6 +7,13 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      
+      # OPTIONAL: WebSocket origin validation (Firefox security)
+      # Leave commented to accept all origins (recommended for most setups)
+      # Uncomment and set to your domain(s) for stricter security
+      # Multiple origins: separate with commas
+      # - ALLOWED_ORIGINS=https://example.domain,http://localhost:3000
+      
       # Optional: Use environment variables for custom HTML
       # - CUSTOM_HEAD_HTML=<script>console.log('Analytics loaded');</script>
       # - CUSTOM_BODY_START_HTML=<!-- Tracking pixel here -->

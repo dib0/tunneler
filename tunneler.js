@@ -1008,8 +1008,26 @@ function tankDestroyed(id, by) {
   let victim = opponents.get(id);
   if (victim) {
     console.log('   Found victim in opponents:', victim.name);
-    opponents.remove(victim);
-    console.log('   opponents.length after removal:', opponents.length);
+    console.log('   Victim lives before:', victim.lives);
+    
+    // Deduct a life if lives system is enabled
+    if (GameConfig.tank.maxLives > 0 && victim.lives > 0) {
+      victim.lives--;
+      console.log('   Lives remaining after death:', victim.lives);
+    }
+    
+    // Only remove from opponents if they have no lives left
+    const isEliminated = GameConfig.tank.maxLives > 0 && victim.lives <= 0;
+    
+    if (isEliminated) {
+      console.log('   Player eliminated - removing from opponents');
+      opponents.remove(victim);
+      console.log('   opponents.length after removal:', opponents.length);
+    } else {
+      console.log('   Player still has lives - keeping in opponents');
+      // Update the opponent with reduced lives
+      opponents.set(victim);
+    }
     
     digCrater(victim.x + Math.floor(TANK_WIDTH / 2), victim.y + Math.floor(TANK_HEIGHT / 2), 4 * TANK_WIDTH + 1, 4 * TANK_HEIGHT + 1);
     wrecks.push(victim);
@@ -1018,22 +1036,40 @@ function tankDestroyed(id, by) {
     // Update scores and display a chat message.
     if (by == player.id) {
       player.score++;
-      displayAlert("You destroyed " + victim.name + "! Your score is now: " + player.score);
+      if (isEliminated) {
+        displayAlert("You eliminated " + victim.name + "! Your score is now: " + player.score);
+      } else {
+        displayAlert("You destroyed " + victim.name + "! (Lives: " + victim.lives + ") Your score is now: " + player.score);
+      }
     } else if (id == by) {
-      displayAlert(victim.name + " self-destructed!");
+      if (isEliminated) {
+        displayAlert(victim.name + " self-destructed and was eliminated!");
+      } else {
+        displayAlert(victim.name + " self-destructed! (Lives: " + victim.lives + ")");
+      }
     } else {
       let winner = opponents.get(by);
       if (winner) {
         winner.score++;
         opponents.set(winner);
-        displayAlert(winner.name + " destroyed " + victim.name + "! " + winner.name + "s score is now: " + winner.score);
+        if (isEliminated) {
+          displayAlert(winner.name + " eliminated " + victim.name + "! " + winner.name + "s score is now: " + winner.score);
+        } else {
+          displayAlert(winner.name + " destroyed " + victim.name + "! (Lives: " + victim.lives + ") " + winner.name + "s score is now: " + winner.score);
+        }
       } else {
-        displayAlert(victim.name + " was destroyed!");
+        if (isEliminated) {
+          displayAlert(victim.name + " was eliminated!");
+        } else {
+          displayAlert(victim.name + " was destroyed! (Lives: " + victim.lives + ")");
+        }
       }
     }
     
-    // Check if game should end
-    checkGameEndCondition();
+    // Only check game end condition if player was actually eliminated
+    if (isEliminated) {
+      checkGameEndCondition();
+    }
   } else {
     console.log('   ⚠️ Victim not found in opponents array (id=' + id + ')');
     console.log('   Current opponents:', opponents.map(o => o.id + ':' + o.name));

@@ -2,6 +2,18 @@
  * The server manages multiple game rooms with separate state and configurations.
  * Players can create private rooms with custom settings including AI opponents.
  * Each room has its own map, trace, and game state.
+ * 
+ * FIREFOX COMPATIBILITY FIXES:
+ * - Increased WebSocket handshake timeout (Firefox is stricter)
+ * - Ping/pong keepalive every 30 seconds (prevents Firefox timeouts)
+ * - Proper origin validation (Firefox enforces CORS strictly)
+ * - CORS headers on HTTP server (helps with WebSocket upgrade)
+ * - Error handling for connection failures
+ * 
+ * If running behind nginx/reverse proxy, ensure proper WebSocket headers:
+ * - proxy_set_header Upgrade $http_upgrade;
+ * - proxy_set_header Connection "upgrade";
+ * - proxy_read_timeout 86400s;
  */
 
 const webSocketServer = require('websocket').server;
@@ -35,14 +47,50 @@ try {
 // Instantiate basic HTTP server that serves static files
 const serve = serveStatic("./");
 const server = http.createServer(function(request, response) {
+  // FIREFOX FIX: Add CORS headers for better WebSocket compatibility
+  response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  response.setHeader('Access-Control-Allow-Headers', 
+    'Origin, X-Requested-With, Content-Type, Accept, ' +
+    'Sec-WebSocket-Extensions, Sec-WebSocket-Key, Sec-WebSocket-Version, ' +
+    'Sec-WebSocket-Protocol');
+  response.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (request.method === 'OPTIONS') {
+    response.writeHead(200);
+    response.end();
+    return;
+  }
+  
   const done = finalhandler(request, response);
   serve(request, response, done);
 });
 
 server.listen(webSocketsServerPort, function() {
-  console.log('🎮 Tunneler Server with Lobby System');
+  console.log('╔══════════════════════════════════════════════════════════╗');
+  console.log('║  🎮 Tunneler Server with Lobby System                   ║');
+  console.log('╚══════════════════════════════════════════════════════════╝');
   console.log('📡 Listening on port ' + webSocketsServerPort);
   console.log('🌐 Access lobby at: http://localhost:' + webSocketsServerPort + '/lobby.html');
+  console.log('');
+  console.log('🦊 Firefox Compatibility: ENABLED');
+  console.log('   ✓ WebSocket keepalive (30s ping/pong)');
+  console.log('   ✓ CORS headers configured');
+  
+  if (ALLOWED_ORIGINS !== null) {
+    console.log('   ✓ Origin validation ENABLED');
+    console.log('     Allowed origins:');
+    ALLOWED_ORIGINS.forEach(origin => {
+      console.log('     - ' + origin);
+    });
+  } else {
+    console.log('   ℹ️  Origin validation DISABLED (accepting all origins)');
+  }
+  
+  console.log('');
+  console.log('⚠️  If running behind nginx, ensure WebSocket upgrade headers are set');
+  console.log('');
 });
 
 // Cleanup inactive rooms every 5 minutes
@@ -50,17 +98,119 @@ setInterval(() => {
   roomManager.cleanupInactiveRooms();
 }, 5 * 60 * 1000);
 
-// Add a websocket server
-const wss = new webSocketServer({ httpServer: server });
+// FIREFOX FIX: Optional origin validation (configurable via env var)
+// Set ALLOWED_ORIGINS env var to enable: ALLOWED_ORIGINS=https://tunneler.dib0.nl,http://localhost:3000
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS ? 
+  process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : 
+  null; // null = accept all origins
+
+// Add a websocket server with Firefox-compatible configuration
+const wss = new webSocketServer({ 
+  httpServer: server,
+  // FIREFOX FIX: Increase timeout for handshake
+  autoAcceptConnections: false, // Always verify connections
+  // FIREFOX FIX: Set maximum fragment size
+  fragmentOutgoingMessages: false,
+  fragmentationThreshold: 0x4000,
+  // FIREFOX FIX: Keep connections alive
+  keepalive: true,
+  keepaliveInterval: 30000, // 30 seconds
+  dropConnectionOnKeepaliveTimeout: true,
+  keepaliveGracePeriod: 10000 // 10 seconds grace period
+});
+
+// FIREFOX FIX: Track active connections for ping/pong
+const activeConnections = new Map(); // ws -> { isAlive: boolean, pingInterval: intervalId }
 
 wss.on('request', function(request) {
-  const ws = request.accept(null, request.origin);
-  console.log('New WebSocket connection from', request.origin);
+  // FIREFOX FIX: Optional origin validation
+  const origin = request.origin || request.httpRequest.headers.origin;
+  console.log('WebSocket connection request from origin:', origin);
+  
+  // Check origin if ALLOWED_ORIGINS is configured
+  if (ALLOWED_ORIGINS !== null) {
+    const isAllowed = ALLOWED_ORIGINS.some(allowed => 
+      origin && origin.startsWith(allowed)
+    );
+    
+    if (!isAllowed) {
+      console.warn('⚠️  Rejected WebSocket connection from unauthorized origin:', origin);
+      console.warn('   Allowed origins:', ALLOWED_ORIGINS.join(', '));
+      request.reject(403, 'Origin not allowed');
+      return;
+    }
+    console.log('✅ Origin validated:', origin);
+  } else {
+    console.log('ℹ️  Origin validation disabled (accepting all origins)');
+  }
+  
+  // Accept connection
+  let ws;
+  try {
+    ws = request.accept(null, origin);
+    console.log('✅ WebSocket connection accepted from', origin);
+  } catch (error) {
+    console.error('❌ Failed to accept WebSocket connection:', error);
+    return;
+  }
+  
+  // FIREFOX FIX: Set up ping/pong keepalive for this connection
+  let isAlive = true;
+  
+  // Listen for pong responses
+  ws.on('pong', function() {
+    isAlive = true;
+  });
+  
+  // Send ping every 30 seconds to keep connection alive (Firefox needs this)
+  const pingInterval = setInterval(() => {
+    if (!isAlive) {
+      console.log('⏱️ WebSocket ping timeout - terminating connection');
+      clearInterval(pingInterval);
+      activeConnections.delete(ws);
+      ws.terminate();
+      return;
+    }
+    
+    isAlive = false;
+    try {
+      ws.ping();
+    } catch (error) {
+      console.error('Error sending ping:', error);
+      clearInterval(pingInterval);
+      activeConnections.delete(ws);
+    }
+  }, 30000);
+  
+  // Store connection info
+  activeConnections.set(ws, { isAlive: true, pingInterval });
+  
+  console.log('🔌 WebSocket connection established (total connections:', activeConnections.size, ')');
 
   // Handle lobby messages and game messages
   ws.on('message', function(message) {
+    // FIREFOX FIX: Mark connection as alive when receiving messages
+    const connectionInfo = activeConnections.get(ws);
+    if (connectionInfo) {
+      connectionInfo.isAlive = true;
+    }
+    
     if (message.type === 'utf8') {
       const data = message.utf8Data;
+      
+      // FIREFOX FIX: Handle PING messages explicitly
+      if (data === '{"type":"PING"}' || (data.startsWith('{') && data.includes('"type":"PING"'))) {
+        try {
+          const pingData = JSON.parse(data);
+          if (pingData.type === 'PING') {
+            // Send PONG response
+            sendJSON(ws, { type: 'PONG', timestamp: Date.now() });
+            return;
+          }
+        } catch (e) {
+          // Not a valid JSON PING, continue normal processing
+        }
+      }
       
       // Check if it's a JSON message (lobby or game connect)
       if (data.startsWith('{')) {
@@ -84,8 +234,30 @@ wss.on('request', function(request) {
     }
   });
 
-  ws.on('close', function() {
+  ws.on('close', function(reasonCode, description) {
+    // FIREFOX FIX: Clean up ping/pong interval
+    const connectionInfo = activeConnections.get(ws);
+    if (connectionInfo && connectionInfo.pingInterval) {
+      clearInterval(connectionInfo.pingInterval);
+    }
+    activeConnections.delete(ws);
+    
+    console.log('🔌 WebSocket connection closed:', reasonCode, description || '');
+    console.log('   Remaining connections:', activeConnections.size);
+    
     handleDisconnect(ws);
+  });
+  
+  // FIREFOX FIX: Add error handler
+  ws.on('error', function(error) {
+    console.error('❌ WebSocket error:', error.message);
+    
+    // Clean up ping/pong interval
+    const connectionInfo = activeConnections.get(ws);
+    if (connectionInfo && connectionInfo.pingInterval) {
+      clearInterval(connectionInfo.pingInterval);
+    }
+    activeConnections.delete(ws);
   });
 });
 

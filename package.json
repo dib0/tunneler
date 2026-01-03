@@ -1,6 +1,6 @@
 {
   "name": "tunneler-lobby-system",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Tunneler multiplayer tank combat game with lobby system and AI opponents",
   "main": "index.js",
   "scripts": {
